@@ -22,7 +22,6 @@ function generateRoomID() {
   return id;
 }
 
-// Helper: Broadcast room state to all players in room
 function broadcastRoomUpdate(roomId) {
   const room = rooms.get(roomId);
   if (!room) return;
@@ -34,21 +33,20 @@ function broadcastRoomUpdate(roomId) {
 
 io.on('connection', (socket) => {
   console.log(`New connection: ${socket.id}`);
-	
+
   socket.on('startGame', (callback) => {
   if (typeof callback !== 'function') return;
 
-  // Find the room this socket is in
   let playerRoomId = null;
   for (const [roomId, room] of rooms.entries()) {
     if (room.players.some(p => p.id === socket.id)) {
       playerRoomId = roomId;
-      // Check if socket is leader
+
       if (room.leaderId !== socket.id) {
         callback({ success: false, message: 'Only leader can start the game.' });
         return;
       }
-      // Check conditions: min players and all others ready
+
       const minPlayers = 3;
       const othersReady = room.players
         .filter(p => p.id !== socket.id)
@@ -63,7 +61,6 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // Broadcast to all players in room that game is starting
       io.to(roomId).emit('gameStarted');
       callback({ success: true });
       console.log(`Game started in room ${roomId} by leader ${socket.id}`);
@@ -75,7 +72,6 @@ io.on('connection', (socket) => {
     callback({ success: false, message: 'Player not in any room.' });
   }
 });
-
 
   socket.on('createRoom', (playerName, callback) => {
     if (typeof callback !== 'function') return;
@@ -120,13 +116,12 @@ io.on('connection', (socket) => {
     console.log(`${playerName} joined room ${roomId}`);
   });
 
-  // New event: Player toggles ready state
   socket.on('toggleReady', () => {
-    // Find room and player
+
     for (const [roomId, room] of rooms.entries()) {
       const player = room.players.find(p => p.id === socket.id);
       if (player) {
-        // Toggle ready only for non-leader players
+
         if (room.leaderId !== socket.id) {
           player.ready = !player.ready;
           broadcastRoomUpdate(roomId);

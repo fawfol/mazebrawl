@@ -4,19 +4,17 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // Load assets (weapon sprite placeholder)
+
     this.load.image('weapon', 'assets/sprites/weapon.png');
   }
 
   create() {
     this.socket = io();
 
-    // Placeholder: simple maze background (gray rectangle)
     this.add.rectangle(400, 300, 800, 600, 0x444444);
 
     this.players = new Map();
 
-    // Capture keyboard movement input WASD
     this.keys = this.input.keyboard.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,
       down: Phaser.Input.Keyboard.KeyCodes.S,
@@ -24,22 +22,16 @@ export default class GameScene extends Phaser.Scene {
       right: Phaser.Input.Keyboard.KeyCodes.D
     });
 
-    // Mouse pointer tracking for aiming
     this.input.mouse.disableContextMenu();
     this.pointer = this.input.activePointer;
 
-    // Send input updates to server periodically
     this.inputTimer = 0;
-    this.inputInterval = 50; // ms
+    this.inputInterval = 50; 
 
-    // Listen to server player states updates
     this.socket.on('gameState', (playersData) => {
       this.updatePlayers(playersData);
     });
 
-    // Listen for game end or round over events here (to be implemented)
-
-    // Send ready signal after entering game (example, can be improved)
     this.socket.emit('playerReadyInGame');
   }
 
@@ -64,7 +56,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   updatePlayers(playersData) {
-    // Remove players who no longer exist
+
     for (const id of this.players.keys()) {
       if (!playersData[id]) {
         this.players.get(id).container.destroy();
@@ -75,7 +67,7 @@ export default class GameScene extends Phaser.Scene {
     for (const id in playersData) {
       const data = playersData[id];
       if (!this.players.has(id)) {
-        // Create new player graphics: circle + weapon sprite
+
         const container = this.add.container(data.x, data.y);
 
         const circle = this.add.circle(0, 0, 20, data.color);
@@ -87,12 +79,10 @@ export default class GameScene extends Phaser.Scene {
         this.players.set(id, { container, circle, weapon });
       }
 
-      // Update player position and weapon rotation
       const player = this.players.get(id);
       player.container.x = data.x;
       player.container.y = data.y;
-      
-      // Calculate angle between player and aim point
+
       const dx = data.aimX - data.x;
       const dy = data.aimY - data.y;
       player.weapon.rotation = Math.atan2(dy, dx);

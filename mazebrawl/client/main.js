@@ -2,8 +2,8 @@ import LobbyScene from './scenes/LobbyScene.js';
 
 const config = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
+  width: window.innerWidth,  //full width
+  height: window.innerHeight, //take full height
   backgroundColor: '#222222',
   scene: [LobbyScene],
   physics: {
@@ -11,6 +11,10 @@ const config = {
     arcade: {
       debug: false,
     }
+  },
+  scale: {
+    mode: Phaser.Scale.RESIZE,   //canvas resizes with window
+    autoCenter: Phaser.Scale.CENTER_BOTH, //center canvas on screen
   }
 };
 
