@@ -189,7 +189,7 @@ export default class LobbyScene extends Phaser.Scene {
       // TODO: this.scene.start('GameScene');
     });
   }
-
+	//create room
   createRoom() {
     const playerName = this.nameInput.value.trim();
     if (!playerName) {
@@ -214,6 +214,7 @@ export default class LobbyScene extends Phaser.Scene {
     });
   }
 
+	//join room
   joinRoom() {
     const playerName = this.nameInput.value.trim();
     const roomId = this.roomInput.value.trim();
@@ -227,33 +228,53 @@ export default class LobbyScene extends Phaser.Scene {
     }
     this.socket.emit('joinRoom', roomId, playerName, (response) => {
       if (response.success) {
-        this.statusText.innerText = `Joined room ${response.roomId}`;
+        this.statusText.innerText = `Joined room : ${response.roomId}`;
         this.showLobbyUI(response);
       } else {
         alert(response.message || 'Error joining room.');
       }
     });
   }
-
-  showLobbyUI(data) {
-    this.formContainer.style.display = 'none';
-
-    if (this.socket.id !== data.leaderId) {
-      this.readyBtn.style.display = 'inline-block';
-      this.readyBtn.innerText = 'READY';
-    } else {
+	leaveRoom() {
+  this.socket.emit('leaveRoom', (response) => {
+    if (response.success) {
+      //reset UI back to prelobby state
+      this.formContainer.style.display = 'flex';
       this.readyBtn.style.display = 'none';
-    }
-
-    if (this.socket.id === data.leaderId) {
-      this.startBtn.style.display = 'inline-block';
-      this.startBtn.disabled = true;
-    } else {
       this.startBtn.style.display = 'none';
+      this.leaveBtn.style.display = 'none';
+      this.playerListDiv.innerHTML = '';
+      this.capacityText.innerText = '';
+      this.statusText.innerText = 'You left the room.';
+      this.logActivity('You left the room.');
+    } else {
+      alert(response.message || 'Error leaving room.');
     }
-  
-    this.updateRoom(data);
-  }
+  });
+}
+
+
+	showLobbyUI(data) {
+	  this.formContainer.style.display = 'none';
+	  this.leaveBtn.style.display = 'inline-block'; // show leave button
+
+	  if (this.socket.id !== data.leaderId) {
+		this.readyBtn.style.display = 'inline-block';
+		this.readyBtn.innerText = 'READY';
+	  } else {
+		this.readyBtn.style.display = 'none';
+	  }
+
+	  if (this.socket.id === data.leaderId) {
+		this.startBtn.style.display = 'inline-block';
+		this.startBtn.disabled = true;
+	  } else {
+		this.startBtn.style.display = 'none';
+	  }
+
+	  this.updateRoom(data);
+	}
+
 
   toggleReady() {
     this.socket.emit('toggleReady');
