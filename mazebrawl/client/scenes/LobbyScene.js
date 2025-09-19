@@ -4,14 +4,11 @@ export default class LobbyScene extends Phaser.Scene {
   }
 
   create() {
-    const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, 'Maze Brawl Lobby', {
-      fontSize: '48px',
-      fill: '#ffffff',
-      fontFamily: 'Arial'
-    });
-    title.setOrigin(0.5);
-
+	
+	const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, 'MAZE BRAWL LOBBY', { fontSize: '48px', fill: '#ffffff', fontFamily: 'Arial' }); title.setOrigin(0.5);	
+	
     this.socket = io();
+
     
     const container = document.createElement('div');
     container.style.position = 'absolute';
@@ -23,10 +20,11 @@ export default class LobbyScene extends Phaser.Scene {
     container.style.flexDirection = 'column';
     container.style.alignItems = 'center';
     container.style.justifyContent = 'center';
+    container.style.paddingTop = '70px';
     container.style.color = 'white';
     container.style.fontFamily = 'Arial, sans-serif';
     container.style.textAlign = 'center';
-    container.style.gap = '10px';
+    container.style.gap = '15px';
     document.body.appendChild(container);
 
     // form container
@@ -34,7 +32,7 @@ export default class LobbyScene extends Phaser.Scene {
     this.formContainer.style.display = 'flex';
     this.formContainer.style.flexDirection = 'column';
     this.formContainer.style.alignItems = 'center';
-    this.formContainer.style.gap = '10px';
+    this.formContainer.style.gap = '12px';
     container.appendChild(this.formContainer);
 
     // name input
@@ -68,6 +66,7 @@ export default class LobbyScene extends Phaser.Scene {
     const btnWrapper = document.createElement('div');
     btnWrapper.style.display = 'flex';
     btnWrapper.style.gap = '5px';
+    btnWrapper.style.marignTop = '10px';
     btnWrapper.style.height = '40px';
     btnWrapper.style.fontSize = '25px';
     this.formContainer.appendChild(btnWrapper);
@@ -93,7 +92,7 @@ export default class LobbyScene extends Phaser.Scene {
 
     // player list
     this.playerListDiv = document.createElement('div');
-    this.playerListDiv.style.marginTop = '25px';
+    this.playerListDiv.style.marginTop = '20px';
     container.appendChild(this.playerListDiv);
 
     // ready and start buttons
@@ -104,7 +103,6 @@ export default class LobbyScene extends Phaser.Scene {
     this.readyBtn.style.fontSize = '20px';
     this.readyBtn.style.display = 'none';
     container.appendChild(this.readyBtn);
-
     this.startBtn = document.createElement('button');
     this.startBtn.innerText = 'START GAME';
     this.startBtn.style.marginTop = '10px';
@@ -112,6 +110,45 @@ export default class LobbyScene extends Phaser.Scene {
     this.startBtn.style.fontSize = '20px';
     this.startBtn.style.display = 'none';
     container.appendChild(this.startBtn);
+
+    // activity logs
+    this.activityLogDiv = document.createElement('div');
+    this.activityLogDiv.style.marginTop = '20px';
+    this.activityLogDiv.style.fontSize = '14px';
+    this.activityLogDiv.style.textAlign = 'left';
+    this.activityLogDiv.style.maxWidth = '300px';
+    container.appendChild(this.activityLogDiv);
+    this.activityLogDiv.style.height = '100px';
+    this.activityLogDiv.style.overflowY = 'auto';
+    this.activityLogDiv.style.background = 'rgba(0,0,0,0.3)';
+    this.activityLogDiv.style.padding = '5px';
+    this.activityLogDiv.style.borderRadius = '5px';
+    this.activityLogDiv.style.width = '80%';
+    this.activityLogDiv.style.maxWidth = '400px';
+
+	//leave room button
+	this.leaveBtn = document.createElement('button');
+	this.leaveBtn.innerText = 'LEAVE ROOM';
+	this.leaveBtn.style.marginTop = '10px';
+	this.leaveBtn.style.height = '40px';
+	this.leaveBtn.style.fontSize = '20px';
+	this.leaveBtn.style.display = 'none'; // hidden until inside a room
+	container.appendChild(this.leaveBtn);
+
+	this.leaveBtn.onclick = () => this.leaveRoom();
+
+    // helper method to log events
+    this.logActivity = (message) => {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.innerText = `[${time}] ${message}`;
+      this.activityLogDiv.appendChild(entry);
+
+      //keep only last 5 logs
+      while (this.activityLogDiv.childNodes.length > 5) {
+        this.activityLogDiv.removeChild(this.activityLogDiv.firstChild);
+      }
+    };
 
     // event listeners
     this.createBtn.onclick = () => this.createRoom();
@@ -127,7 +164,25 @@ export default class LobbyScene extends Phaser.Scene {
       });
     };
 
+    //SOCKET EVENT HANDLERS
+    this.socket.on('roomCreated', (roomId) => {
+      this.logActivity(`Room created! ID: ${roomId}`);
+    });
+
+    this.socket.on('playerJoined', (name) => {
+      this.logActivity(`${name} joined the room`);
+    });
+
+    this.socket.on('playerLeft', (name) => {
+      this.logActivity(`${name} left the room`);
+    });
+
+    this.socket.on('leaderChanged', (newLeaderName) => {
+      this.logActivity(`Leader left — new leader is ${newLeaderName}`);
+    });
+
     this.socket.on('roomUpdate', (data) => this.updateRoom(data));
+
     this.socket.on('gameStarted', () => {
       this.statusText.innerText = 'Game Started!';
       console.log('Received gameStarted event');
@@ -143,7 +198,15 @@ export default class LobbyScene extends Phaser.Scene {
     }
     this.socket.emit('createRoom', playerName, (response) => {
       if (response.success) {
-        this.statusText.innerText = `Room created! Room ID: ${response.roomId}\nYou are the leader.`;
+		this.statusText.style.fontSize = '17px';
+		this.statusText.style.fontWeight = 'bold';
+		this.statusText.style.letterSpacing = '1px';
+		this.statusText.style.color = 'yellow';
+		this.statusText.style.background = 'rgba(0,0,0,0.5)';
+		this.statusText.style.padding = '10px';
+		this.statusText.style.borderRadius = '2px';
+      
+		this.statusText.innerText = `Room ID: ${response.roomId}`;
         this.showLobbyUI(response);
       } else {
         alert('Error creating room.');
@@ -188,7 +251,7 @@ export default class LobbyScene extends Phaser.Scene {
     } else {
       this.startBtn.style.display = 'none';
     }
-
+  
     this.updateRoom(data);
   }
 
@@ -233,13 +296,21 @@ export default class LobbyScene extends Phaser.Scene {
       this.playerListDiv.appendChild(playerDiv);
     });
 
-    //update Ready Button Text for current player
+    if (this.socket.id === data.leaderId) {
+      this.readyBtn.style.display = 'none';
+      this.startBtn.style.display = 'inline-block';
+    } else {
+      this.readyBtn.style.display = 'inline-block';
+      this.startBtn.style.display = 'none';
+    }
+
+    // update Ready Button Text for current player
     const currentPlayer = data.players.find(p => p.id === this.socket.id);
     if (currentPlayer && this.socket.id !== data.leaderId) {
       this.readyBtn.innerText = currentPlayer.ready ? 'NOT READY' : 'READY';
     }
 
-    //enable start button if enough players and all are ready
+    // enable start button if enough players and all are ready
     if (this.socket.id === data.leaderId) {
       const minPlayers = 3;
       const othersReady = data.players
