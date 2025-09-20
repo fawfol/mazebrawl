@@ -1,20 +1,22 @@
+//mazebrawl/client/main.js 
+
+
 import LobbyScene from './scenes/LobbyScene.js';
+import GameScene from './scenes/GameScene.js';
 
 const config = {
   type: Phaser.AUTO,
-  width: window.innerWidth,  //full width
-  height: window.innerHeight, //take full height
+  width: window.innerWidth, 
+  height: window.innerHeight,
   backgroundColor: '#222222',
-  scene: [LobbyScene],
+  scene: [LobbyScene, GameScene],
   physics: {
     default: 'arcade',
-    arcade: {
-      debug: false,
-    }
+    arcade: { debug: false }
   },
   scale: {
-    mode: Phaser.Scale.RESIZE,   //canvas resizes with window
-    autoCenter: Phaser.Scale.CENTER_BOTH, //center canvas on screen
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
   }
 };
 

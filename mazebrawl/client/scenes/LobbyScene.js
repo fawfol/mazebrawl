@@ -5,7 +5,7 @@ export default class LobbyScene extends Phaser.Scene {
 
   create() {
 	
-	const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, 'MAZE BRAWL LOBBY', { fontSize: '48px', fill: '#ffffff', fontFamily: 'Arial' }); title.setOrigin(0.5);	
+	const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, 'VARY BRAWL LOBBY', { fontSize: '48px', fill: '#ffffff', fontFamily: 'Arial' }); title.setOrigin(0.5);	
 	
     this.socket = io();
 
@@ -184,11 +184,27 @@ export default class LobbyScene extends Phaser.Scene {
     this.socket.on('roomUpdate', (data) => this.updateRoom(data));
 
     this.socket.on('gameStarted', () => {
-      this.statusText.innerText = 'Game Started!';
-      console.log('Received gameStarted event');
-      // TODO: this.scene.start('GameScene');
-    });
-  }
+	  this.statusText.innerText = 'Game Started!';
+
+	  // remove DOM elements
+	  document.body.querySelectorAll('div').forEach(el => el.remove());
+
+	  // remove Phaser objects
+	  this.children.removeAll(true);
+
+	  // stop LobbyScene so its objects no longer render
+	  this.scene.stop('LobbyScene');
+
+	  // start GameScene
+	  this.scene.start('GameScene', {
+		players: this.players,
+		myIndex: this.myIndex,
+		socket: this.socket,
+		leaderId: this.leaderId
+	  });
+	});
+
+  	}
 	//create room
   createRoom() {
     const playerName = this.nameInput.value.trim();
