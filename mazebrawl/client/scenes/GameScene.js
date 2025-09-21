@@ -37,7 +37,7 @@ export default class GameScene extends Phaser.Scene {
     });
     document.body.appendChild(this.domContainer);
 
-    //status message
+    //staltus message
     this.statusText = document.createElement('h1');
     this.statusText.innerText = this.isLeader
       ? 'Choose a game to start'

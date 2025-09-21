@@ -7,7 +7,12 @@ export default class LobbyScene extends Phaser.Scene {
 	
 	const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, 'VARY BRAWL LOBBY', { fontSize: '48px', fill: '#ffffff', fontFamily: 'Arial' }); title.setOrigin(0.5);	
 	
-    this.socket = io();
+    const SERVER_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://varybrawl.onrender.com';
+
+	this.socket = io(SERVER_URL);
+
 
     
     const container = document.createElement('div');
