@@ -31,7 +31,8 @@ export default class GameScene extends Phaser.Scene {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      color: '#000',
+      background: '#333',
+      color : '#fff';
       fontFamily: 'sans-serif',
       gap: '1rem',
       padding: '20px',
@@ -101,7 +102,7 @@ export default class GameScene extends Phaser.Scene {
       width: '80%',
       maxWidth: '500px',
       height: '200px',
-      background: '#333',
+      background: '#fff',
       padding: '10px',
       overflowY: 'auto',
       borderRadius: '10px',
