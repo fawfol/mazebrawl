@@ -32,7 +32,7 @@ export default class GameScene extends Phaser.Scene {
       alignItems: 'center',
       justifyContent: 'center',
       background: '#333',
-      color : '#fff';
+      color : '#fff',
       fontFamily: 'sans-serif',
       gap: '1rem',
       padding: '20px',
