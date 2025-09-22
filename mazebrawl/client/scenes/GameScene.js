@@ -32,7 +32,7 @@ export default class GameScene extends Phaser.Scene {
       alignItems: 'center',
       justifyContent: 'center',
       background: '#333',
-      color : '#000',
+      color : '#fff',
       fontFamily: 'sans-serif',
       gap: '1rem',
       padding: '20px',
@@ -63,10 +63,10 @@ export default class GameScene extends Phaser.Scene {
     });
 
     //listen for chat messages
-    this.socket.off('gameChatMessage');
-    this.socket.on('gameChatMessage', (msg) => {
-      this.addChatMessage(msg);
-    });
+	this.socket.off('gameChatMessage');
+	this.socket.on('gameChatMessage', (data) => {
+	  this.addChatMessage(`${data.name}: ${data.text}`);
+	});
   }
 
   renderGameSelectionUI() {
@@ -102,8 +102,9 @@ export default class GameScene extends Phaser.Scene {
       alignItems: 'flex-start',
       width: '80%',
       maxWidth: '500px',
-      height: '200px',
+      height: '250px',
       background: '#fff',
+      color: '#000',
       padding: '10px',
       overflowY: 'auto',
       borderRadius: '10px',
@@ -130,6 +131,7 @@ export default class GameScene extends Phaser.Scene {
     const sendBtn = document.createElement('button');
     sendBtn.innerText = 'Send';
     sendBtn.style.padding = '5px 10px';
+	sendBtn.style.height = '250px';
     sendBtn.onclick = () => this.sendChatMessage();
 
     inputWrapper.appendChild(this.chatInput);
@@ -144,8 +146,11 @@ export default class GameScene extends Phaser.Scene {
   sendChatMessage() {
     const text = this.chatInput.value.trim();
     if (!text) return;
-    this.socket.emit('gameChatMessage', text);
-    this.chatInput.value = '';
+
+	const playerName = this.players[this.myIndex]?.name || "Unknown";
+	this.socket.emit('gameChatMessage', { name: playerName, text });
+
+	this.chatInput.value = '';
   }
 
   addChatMessage(msg) {

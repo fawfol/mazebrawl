@@ -171,19 +171,31 @@ io.on('connection', (socket) => {
   });
 
   //-- MESSAGE LSITENER ---
+	//-- MESSAGE LISTENER ---
 	socket.on('gameChatMessage', (msg) => {
-  // Find the room of this socket
-  let playerRoomId = null;
-  for (const [roomId, room] of rooms.entries()) {
-    if (room.players.some(p => p.id === socket.id)) {
-      playerRoomId = roomId;
-      break;
-    }
-  }
-  if (playerRoomId) {
-    io.to(playerRoomId).emit('gameChatMessage', `${socket.id.slice(0, 4)}: ${msg}`);
-  }
-});
+	  // Find the room of this socket
+	  let playerRoomId = null;
+	  for (const [roomId, room] of rooms.entries()) {
+		if (room.players.some(p => p.id === socket.id)) {
+		  playerRoomId = roomId;
+		  break;
+		}
+	  }
+
+	  if (playerRoomId) {
+		const room = rooms.get(playerRoomId);
+		const player = room.players.find(p => p.id === socket.id);
+
+		if (player) {
+		  io.to(playerRoomId).emit('gameChatMessage', {
+		    name: player.name,
+		    text: msg
+		  });
+		}
+	  }
+	});
+
+
 
   // --- DISCONNECT ---
   socket.on('disconnect', () => {
