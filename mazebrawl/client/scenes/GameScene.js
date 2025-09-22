@@ -32,7 +32,7 @@ export default class GameScene extends Phaser.Scene {
       alignItems: 'center',
       justifyContent: 'center',
       background: '#333',
-      color : '#fff',
+      color : '#000',
       fontFamily: 'sans-serif',
       gap: '1rem',
       padding: '20px',
@@ -63,6 +63,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     //listen for chat messages
+    this.socket.off('gameChatMessage');
     this.socket.on('gameChatMessage', (msg) => {
       this.addChatMessage(msg);
     });
