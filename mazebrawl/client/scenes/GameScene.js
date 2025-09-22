@@ -103,7 +103,7 @@ export default class GameScene extends Phaser.Scene {
       alignItems: 'flex-start',
       width: '80%',
       maxWidth: '500px',
-      height: '30px',
+      height: '130px',
       background: '#fff',
       color: '#000',
       padding: '10px',
