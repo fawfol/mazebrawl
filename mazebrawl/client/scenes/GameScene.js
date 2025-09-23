@@ -173,38 +173,14 @@ export default class GameScene extends Phaser.Scene {
   }
 
   startTypingRace(sentence) {
-    // clear previous UI
-    this.domContainer.innerHTML = '';
-
-    const title = document.createElement('h2');
-    title.innerText = 'Typing Race!';
-    this.domContainer.appendChild(title);
-
-    const sentenceDisplay = document.createElement('p');
-    sentenceDisplay.innerText = sentence;
-    sentenceDisplay.style.fontSize = '1.5rem';
-    this.domContainer.appendChild(sentenceDisplay);
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'Start typing...';
-    input.style.fontSize = '1.2rem';
-    input.style.padding = '5px';
-    input.style.width = '80%';
-    this.domContainer.appendChild(input);
-
-    const status = document.createElement('h2');
-    status.innerText = 'Start typing!';
-    this.domContainer.appendChild(status);
-
-    input.focus();
-    input.addEventListener('input', () => {
-      if (input.value === sentence) {
-        status.innerText = 'You finished!';
-        input.disabled = true;
-      }
+    this.scene.start('TypingGame', {
+        players: this.players,
+        myIndex: this.myIndex,
+        socket: this.socket,
+        sentence
     });
-  }
+}
+
 
   shutdown() {
     if (this.domContainer) this.domContainer.remove();
