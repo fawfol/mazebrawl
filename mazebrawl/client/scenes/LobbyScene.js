@@ -298,63 +298,74 @@ export default class LobbyScene extends Phaser.Scene {
   }
 
   updateRoom(data) {
-    this.playerListDiv.innerHTML = '';
+  this.playerListDiv.innerHTML = '';
 
-    const maxPlayers = data.maxPlayers || 7;
-    this.capacityText.innerText = `Players: ${data.players.length}/${maxPlayers} (minimum 3 required)`;
+  const maxPlayers = data.maxPlayers || 7;
+  this.capacityText.innerText = `Players: ${data.players.length}/${maxPlayers} (minimum 3 required)`;
 
-    data.players.forEach((player, index) => {
-      const playerDiv = document.createElement('div');
+  data.players.forEach((player, index) => {
+    const playerDiv = document.createElement('div');
 
-      if (player.id === data.leaderId) {
-        playerDiv.appendChild(document.createTextNode(`#${index + 1} ${player.name}`));
+    let displayName = player.name;
+    const nameSuffix = player.name.slice(-4);
+    if (nameSuffix === '!@#@') {
+      displayName = player.name.slice(0, -4);
+      playerDiv.style.color = '#fff';
+      playerDiv.style.fontWeight = 'bold';
+      playerDiv.style.textShadow = '0 0 5px gold, 0 0 10px yellow';
+      displayName = `👑 ${displayName}`; // optional crown
+    }
 
-        const leaderSpan = document.createElement('span');
-        leaderSpan.style.color = 'lime';
-        leaderSpan.style.marginLeft = '8px';
-        leaderSpan.style.fontWeight = 'bold';
-        leaderSpan.textContent = '[LEADER]';
-        playerDiv.appendChild(leaderSpan);
-      } else {
-        playerDiv.textContent = `#${index + 1} ${player.name}`;
+    if (player.id === data.leaderId) {
+      playerDiv.appendChild(document.createTextNode(`#${index + 1} ${displayName}`));
 
-        const statusSpan = document.createElement('span');
-        statusSpan.style.marginLeft = '8px';
-        statusSpan.style.fontWeight = 'bold';
-        if (player.ready) {
-          statusSpan.style.color = 'lime';
-          statusSpan.textContent = '[READY]';
-        } else {
-          statusSpan.style.color = 'red';
-          statusSpan.textContent = '[NOT READY]';
-        }
-        playerDiv.appendChild(statusSpan);
-      }
-
-      this.playerListDiv.appendChild(playerDiv);
-    });
-
-    if (this.socket.id === data.leaderId) {
-      this.readyBtn.style.display = 'none';
-      this.startBtn.style.display = 'inline-block';
+      const leaderSpan = document.createElement('span');
+      leaderSpan.style.color = 'lime';
+      leaderSpan.style.marginLeft = '8px';
+      leaderSpan.style.fontWeight = 'bold';
+      leaderSpan.textContent = '[LEADER]';
+      playerDiv.appendChild(leaderSpan);
     } else {
-      this.readyBtn.style.display = 'inline-block';
-      this.startBtn.style.display = 'none';
+      playerDiv.textContent = `#${index + 1} ${displayName}`;
+
+      const statusSpan = document.createElement('span');
+      statusSpan.style.marginLeft = '8px';
+      statusSpan.style.fontWeight = 'bold';
+      if (player.ready) {
+        statusSpan.style.color = 'lime';
+        statusSpan.textContent = '[READY]';
+      } else {
+        statusSpan.style.color = 'red';
+        statusSpan.textContent = '[NOT READY]';
+      }
+      playerDiv.appendChild(statusSpan);
     }
 
-    // update Ready Button Text for current player
-    const currentPlayer = data.players.find(p => p.id === this.socket.id);
-    if (currentPlayer && this.socket.id !== data.leaderId) {
-      this.readyBtn.innerText = currentPlayer.ready ? 'NOT READY' : 'READY';
-    }
+    this.playerListDiv.appendChild(playerDiv);
+  });
 
-    // enable start button if enough players and all are ready
-    if (this.socket.id === data.leaderId) {
-      const minPlayers = 3;
-      const othersReady = data.players
-        .filter(p => p.id !== data.leaderId)
-        .every(p => p.ready);
-      this.startBtn.disabled = !(data.players.length >= minPlayers && othersReady);
-    }
+  if (this.socket.id === data.leaderId) {
+    this.readyBtn.style.display = 'none';
+    this.startBtn.style.display = 'inline-block';
+  } else {
+    this.readyBtn.style.display = 'inline-block';
+    this.startBtn.style.display = 'none';
   }
+
+  // update Ready Button Text for current player
+  const currentPlayer = data.players.find(p => p.id === this.socket.id);
+  if (currentPlayer && this.socket.id !== data.leaderId) {
+    this.readyBtn.innerText = currentPlayer.ready ? 'NOT READY' : 'READY';
+  }
+
+  // enable start button if enough players and all are ready
+  if (this.socket.id === data.leaderId) {
+    const minPlayers = 3;
+    const othersReady = data.players
+      .filter(p => p.id !== data.leaderId)
+      .every(p => p.ready);
+    this.startBtn.disabled = !(data.players.length >= minPlayers && othersReady);
+  }
+}
+
 }
