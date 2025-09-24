@@ -2,6 +2,7 @@
 
 import LobbyScene from './scenes/LobbyScene.js';
 import GameScene from './scenes/GameScene.js';
+import TypingGame from './scenes/TypingGame.js';
 
 //determine server URL dynamically
 const SERVER_URL = window.location.hostname === 'localhost'
@@ -14,7 +15,7 @@ const config = {
   width: window.innerWidth,
   height: window.innerHeight,
   backgroundColor: '#222222',
-  scene: [LobbyScene, GameScene],
+  scene: [LobbyScene, GameScene, TypingGame],
   physics: {
     default: 'arcade',
     arcade: { debug: false }

@@ -15,10 +15,26 @@ export default class GameScene extends Phaser.Scene {
   create() {
     console.log('GameScene started');
 
-    //clear any previous DOM
     document.body.innerHTML = '';
+    
+    // This listener is correct, as it waits for the specific game (e.g. TypingRace) to start
+    this.socket.on('startGame', (gameType, sentence) => {
+      console.log('startGame received:', gameType);
+      if (gameType === 'TypingRace') {
+        this.statusText.innerText = 'Typing Race Starting...';
+        
+        document.body.querySelectorAll('div').forEach(el => el.remove());
 
-    //main container
+        this.scene.stop('GameScene');
+        this.scene.start('TypingGame', {
+            players: this.players,
+            myIndex: this.myIndex,
+            socket: this.socket,
+            sentence: sentence
+        });
+      }
+    });
+
     this.domContainer = document.createElement('div');
     this.domContainer.className = 'game-container';
     Object.assign(this.domContainer.style, {
@@ -40,34 +56,22 @@ export default class GameScene extends Phaser.Scene {
     });
     document.body.appendChild(this.domContainer);
 
-    //status message
     this.statusText = document.createElement('h1');
     this.statusText.innerText = this.isLeader
       ? 'Choose a game to start'
       : 'Waiting for leader to choose a game...';
     this.domContainer.appendChild(this.statusText);
 
-    //leader sees game selection and  others see chat
     if (this.isLeader) {
       this.renderGameSelectionUI();
     } else {
       this.renderChatBox();
     }
 
-    //listen for game start from server
-    this.socket.on('startGame', (gameType, sentence) => {
-      console.log('startGame received:', gameType);
-      if (gameType === 'TypingRace') {
-        this.startTypingRace(sentence);
-      }
-    });
-
-    //listen for chat messages
 	this.socket.off('gameChatMessage');
 	this.socket.on('gameChatMessage', (data) => {
 	  this.addChatMessage(`${data.name}: ${data.text}`);
 	});
-	
   }
 
   renderGameSelectionUI() {
@@ -84,14 +88,17 @@ export default class GameScene extends Phaser.Scene {
 
     typingRaceBtn.onclick = () => {
       this.statusText.innerText = 'Starting Typing Race...';
-      //emit game start with type
-      this.socket.emit('startGame', 'TypingRace');
+      // UPDATED: Use the new 'selectGame' event
+      this.socket.emit('selectGame', 'TypingRace', (response) => {
+        if (!response.success) {
+          this.statusText.innerText = response.message;
+        }
+      });
     };
 
     gameList.appendChild(typingRaceBtn);
     this.domContainer.appendChild(gameList);
 
-    //chat for leader
     this.renderChatBox();
   }
 
@@ -144,25 +151,13 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
- // sendChatMessage() {
-   // const text = this.chatInput.value.trim();
-//    if (!text) return;
-
-//	const playerName = this.players[this.myIndex]?.name || "Unknown";
-//	this.socket.emit('gameChatMessage', { name: playerName, text });
-
-//	this.chatInput.value = '';
-//  }
-	sendChatMessage() {
-		const text = this.chatInput.value.trim();
-		  if (!text) return;
-
-	  // only send text, server will attach name	
-  	this.socket.emit('gameChatMessage', text);
-
-	  this.chatInput.value = '';
-	}
-
+  sendChatMessage() {
+	const text = this.chatInput.value.trim();
+	if (!text) return;
+	
+	this.socket.emit('gameChatMessage', text);
+	this.chatInput.value = '';
+  }
 
   addChatMessage(msg) {
     const p = document.createElement('p');
@@ -171,18 +166,10 @@ export default class GameScene extends Phaser.Scene {
     this.chatContainer.appendChild(p);
     this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
   }
-
-  startTypingRace(sentence) {
-    this.scene.start('TypingGame', {
-        players: this.players,
-        myIndex: this.myIndex,
-        socket: this.socket,
-        sentence
-    });
-}
-
-
+  
   shutdown() {
-    if (this.domContainer) this.domContainer.remove();
+    console.log('GameScene shutting down, removing listeners.');
+    this.socket.off('startGame');
+    this.socket.off('gameChatMessage');
   }
 }

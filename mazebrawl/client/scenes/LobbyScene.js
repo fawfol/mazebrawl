@@ -1,3 +1,5 @@
+// mazebrawl/client/scenes/LobbyScene.js
+
 export default class LobbyScene extends Phaser.Scene {
   constructor() {
     super({ key: 'LobbyScene' });
@@ -8,8 +10,6 @@ export default class LobbyScene extends Phaser.Scene {
 	const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, 'VARY BRAWL LOBBY', { fontSize: '48px', fill: '#ffffff', fontFamily: 'Arial' }); title.setOrigin(0.5);	
 	
      this.socket = io(this.game.SERVER_URL);
-
-
     
     const container = document.createElement('div');
     container.style.position = 'absolute';
@@ -155,8 +155,10 @@ export default class LobbyScene extends Phaser.Scene {
     this.createBtn.onclick = () => this.createRoom();
     this.joinBtn.onclick = () => this.joinRoom();
     this.readyBtn.onclick = () => this.toggleReady();
+    
+    // UPDATED: Use the new 'lobbyStart' event
     this.startBtn.onclick = () => {
-      this.socket.emit('startGame', (response) => {
+      this.socket.emit('lobbyStart', (response) => {
         if (!response.success) {
           alert(response.message);
         } else {
@@ -184,28 +186,26 @@ export default class LobbyScene extends Phaser.Scene {
 
     this.socket.on('roomUpdate', (data) => this.updateRoom(data));
 
-    this.socket.on('gameStarted', () => {
-	  this.statusText.innerText = 'Game Started!';
+    // UPDATED: Listen for the new 'gameHasStarted' event
+    this.socket.on('gameHasStarted', () => {
+	  this.statusText.innerText = 'Game Started! Moving to game selection...';
 
-	  // remove DOM elements
 	  document.body.querySelectorAll('div').forEach(el => el.remove());
-
-	  // remove Phaser objects
 	  this.children.removeAll(true);
+      
+      // Pass player data to the next scene
+	  const myPlayerIndex = this.players.findIndex(p => p.id === this.socket.id);
 
-	  // stop LobbyScene so its objects no longer render
 	  this.scene.stop('LobbyScene');
-
-	  // start GameScene
 	  this.scene.start('GameScene', {
 		players: this.players,
-		myIndex: this.myIndex,
+		myIndex: myPlayerIndex,
 		socket: this.socket,
 		leaderId: this.leaderId
 	  });
 	});
 
-  	}
+  }
 	//create room
   createRoom() {
     const playerName = this.nameInput.value.trim();
@@ -255,7 +255,6 @@ export default class LobbyScene extends Phaser.Scene {
 	leaveRoom() {
   this.socket.emit('leaveRoom', (response) => {
     if (response.success) {
-      //reset UI back to prelobby state
       this.formContainer.style.display = 'flex';
       this.readyBtn.style.display = 'none';
       this.startBtn.style.display = 'none';
@@ -270,10 +269,9 @@ export default class LobbyScene extends Phaser.Scene {
   });
 }
 
-
 	showLobbyUI(data) {
 	  this.formContainer.style.display = 'none';
-	  this.leaveBtn.style.display = 'inline-block'; // show leave button
+	  this.leaveBtn.style.display = 'inline-block';
 
 	  if (this.socket.id !== data.leaderId) {
 		this.readyBtn.style.display = 'inline-block';
@@ -292,80 +290,62 @@ export default class LobbyScene extends Phaser.Scene {
 	  this.updateRoom(data);
 	}
 
-
   toggleReady() {
     this.socket.emit('toggleReady');
   }
 
   updateRoom(data) {
-  this.playerListDiv.innerHTML = '';
+    // Store player data for passing to next scene
+    this.players = data.players;
+    this.leaderId = data.leaderId;
 
-  const maxPlayers = data.maxPlayers || 7;
-  this.capacityText.innerText = `Players: ${data.players.length}/${maxPlayers} (minimum 3 required)`;
+    this.playerListDiv.innerHTML = '';
 
-  data.players.forEach((player, index) => {
-    const playerDiv = document.createElement('div');
+    const maxPlayers = data.maxPlayers || 7;
+    this.capacityText.innerText = `Players: ${data.players.length}/${maxPlayers} (minimum 3 required)`;
 
-    let displayName = player.name;
-    const nameSuffix = player.name.slice(-4);
-    if (nameSuffix === '!@#@') {
-      displayName = player.name.slice(0, -4);
-      playerDiv.style.color = '#fff';
-      playerDiv.style.fontWeight = 'bold';
-      playerDiv.style.textShadow = '0 0 5px gold, 0 0 10px yellow';
-      displayName = `👑 ${displayName}`; // optional crown
-    }
+    data.players.forEach((player, index) => {
+        const playerDiv = document.createElement('div');
+        let displayName = player.name;
 
-    if (player.id === data.leaderId) {
-      playerDiv.appendChild(document.createTextNode(`#${index + 1} ${displayName}`));
+        if (player.id === data.leaderId) {
+            displayName = `👑 ${displayName} [LEADER]`;
+            playerDiv.style.color = 'lime';
+        } else {
+            displayName = `${displayName} ${player.ready ? '[READY]' : '[NOT READY]'}`;
+            playerDiv.style.color = player.ready ? 'lime' : 'red';
+        }
+        playerDiv.textContent = `#${index + 1} ${displayName}`;
+        this.playerListDiv.appendChild(playerDiv);
+    });
 
-      const leaderSpan = document.createElement('span');
-      leaderSpan.style.color = 'lime';
-      leaderSpan.style.marginLeft = '8px';
-      leaderSpan.style.fontWeight = 'bold';
-      leaderSpan.textContent = '[LEADER]';
-      playerDiv.appendChild(leaderSpan);
+    if (this.socket.id === data.leaderId) {
+        this.readyBtn.style.display = 'none';
+        this.startBtn.style.display = 'inline-block';
     } else {
-      playerDiv.textContent = `#${index + 1} ${displayName}`;
-
-      const statusSpan = document.createElement('span');
-      statusSpan.style.marginLeft = '8px';
-      statusSpan.style.fontWeight = 'bold';
-      if (player.ready) {
-        statusSpan.style.color = 'lime';
-        statusSpan.textContent = '[READY]';
-      } else {
-        statusSpan.style.color = 'red';
-        statusSpan.textContent = '[NOT READY]';
-      }
-      playerDiv.appendChild(statusSpan);
+        this.readyBtn.style.display = 'inline-block';
+        this.startBtn.style.display = 'none';
     }
 
-    this.playerListDiv.appendChild(playerDiv);
-  });
+    const currentPlayer = data.players.find(p => p.id === this.socket.id);
+    if (currentPlayer && this.socket.id !== data.leaderId) {
+        this.readyBtn.innerText = currentPlayer.ready ? 'NOT READY' : 'READY';
+    }
 
-  if (this.socket.id === data.leaderId) {
-    this.readyBtn.style.display = 'none';
-    this.startBtn.style.display = 'inline-block';
-  } else {
-    this.readyBtn.style.display = 'inline-block';
-    this.startBtn.style.display = 'none';
-  }
-
-  // update Ready Button Text for current player
-  const currentPlayer = data.players.find(p => p.id === this.socket.id);
-  if (currentPlayer && this.socket.id !== data.leaderId) {
-    this.readyBtn.innerText = currentPlayer.ready ? 'NOT READY' : 'READY';
-  }
-
-  // enable start button if enough players and all are ready
-  if (this.socket.id === data.leaderId) {
-    const minPlayers = 3;
-    const othersReady = data.players
-      .filter(p => p.id !== data.leaderId)
-      .every(p => p.ready);
-    this.startBtn.disabled = !(data.players.length >= minPlayers && othersReady);
-  }
+    if (this.socket.id === data.leaderId) {
+        const minPlayers = 3;
+        const othersReady = data.players.filter(p => p.id !== data.leaderId).every(p => p.ready);
+        this.startBtn.disabled = !(data.players.length >= minPlayers && othersReady);
+    }
 }
 
+  shutdown() {
+    console.log('LobbyScene shutting down, removing listeners.');
+    this.socket.off('gameHasStarted'); // UPDATED
+    this.socket.off('roomUpdate');
+    this.socket.off('roomCreated');
+    this.socket.off('playerJoined');
+    this.socket.off('playerLeft');
+    this.socket.off('leaderChanged');
+  }
 }

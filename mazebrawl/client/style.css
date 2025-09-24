@@ -1,0 +1,50 @@
+  .race-track {
+    display: flex;
+    align-items: center;
+    width: 90%;
+    max-width: 1000px;
+    background-color: #333;
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    min-height: 80px;
+  }
+  .block {
+    padding: 10px;
+    margin: 0 5px;
+    border-radius: 5px;
+    background-color: #555;
+    color: #ccc;
+    font-family: 'Courier New', Courier, monospace;
+    white-space: nowrap;
+  }
+  .block.start-finish {
+    background-color: #4CAF50;
+    font-weight: bold;
+    color: white;
+  }
+  .block.completed {
+    background-color: #3a5a3a;
+    color: #888;
+  }
+  .block.current {
+    background-color: #008CBA;
+    color: white;
+    box-shadow: 0 0 10px #00BFFF;
+  }
+  .player-char {
+    position: absolute;
+    bottom: 5px; /* Position at the bottom of the track */
+    font-size: 24px;
+    transition: left 0.3s ease-in-out;
+    transform: translateX(-50%); /* Center the emoji */
+  }
+  .input-error {
+    border: 2px solid red !important;
+    animation: shake 0.2s;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }

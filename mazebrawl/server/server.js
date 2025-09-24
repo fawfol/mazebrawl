@@ -92,42 +92,54 @@ io.on('connection', (socket) => {
       }
     }
   });
-
-  // --- REQUEST RANDOM SENTENCE ---
-  socket.on('requestTypingSentence', callback => {
-    const sentence = TypingRace.prototype.getRandomSentence();
-    if (callback) callback(sentence);
-  });
-
-  // --- START GAME ---
-  socket.on('startGame', (gameType, sentence) => {
-    let playerRoomId = null;
+  
+  // --- START FROM LOBBY ---
+  socket.on('lobbyStart', (callback) => {
     for (const [roomId, room] of rooms.entries()) {
-      if (room.players.some(p => p.id === socket.id)) {
-        playerRoomId = roomId;
-        if (room.leaderId !== socket.id) return; // only leader
+        if (room.players.some(p => p.id === socket.id)) {
+            if (room.leaderId !== socket.id) return; // only leader
 
-        if (room.players.length < 3) {
-          socket.emit('gameStartError', 'Not enough players (min 3)');
-          return;
-        }
-        if (!room.players.filter(p => p.id !== socket.id).every(p => p.ready)) {
-          socket.emit('gameStartError', 'All players must be ready');
-          return;
-        }
+            const minPlayers = 3;
+            const othersReady = room.players.filter(p => p.id !== socket.id).every(p => p.ready);
 
-        // --- START SPECIFIC GAME ---
-        if (gameType === 'TypingRace') {
-          const gameInstance = new TypingRace(io, roomId, room.players);
-          activeGames.set(roomId, gameInstance);
+            if (room.players.length < minPlayers) {
+                if (callback) callback({ success: false, message: 'Not enough players (min 3)' });
+                return;
+            }
+            if (!othersReady) {
+                if (callback) callback({ success: false, message: 'All players must be ready' });
+                return;
+            }
+            
+            //tell all clients to move from Lobby to GameScene
+            io.to(roomId).emit('gameHasStarted');
+            console.log(`Session started in room ${roomId}. Moving to GameScene.`);
+            if (callback) callback({ success: true });
+            break;
         }
-
-        io.to(roomId).emit('gameStarted');
-        console.log(`Game started in room ${roomId} by leader ${socket.id}`);
-        break;
-      }
     }
   });
+
+  // --- SELECT A SPECIFIC GAME FROM GAMESCENE ---
+  socket.on('selectGame', (gameType, callback) => {
+    for (const [roomId, room] of rooms.entries()) {
+        if (room.players.some(p => p.id === socket.id)) {
+            if (room.leaderId !== socket.id) return; // only leader
+
+            // Start the actual game instance
+            if (gameType === 'TypingRace') {
+                const gameInstance = new TypingRace(io, roomId, room.players);
+                activeGames.set(roomId, gameInstance);
+                console.log(`TypingRace game started in room ${roomId}`);
+            }
+            // Add other game types here with else if(...)
+            
+            if (callback) callback({ success: true });
+            break;
+        }
+    }
+  });
+
 
   // --- TYPING PROGRESS (handled in game module) ---
   socket.on('typingProgress', (progress) => {
@@ -170,8 +182,7 @@ io.on('connection', (socket) => {
     if (callback) callback({ success: found });
   });
 
-  //-- MESSAGE LSITENER ---
-	//-- MESSAGE LISTENER ---
+  //-- MESSAGE LISTENER ---
 	socket.on('gameChatMessage', (msg) => {
 	  // Find the room of this socket
 	  let playerRoomId = null;
@@ -194,8 +205,6 @@ io.on('connection', (socket) => {
 		}
 	  }
 	});
-
-
 
   // --- DISCONNECT ---
   socket.on('disconnect', () => {
