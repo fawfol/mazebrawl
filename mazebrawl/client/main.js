@@ -13,8 +13,8 @@ const SERVER_URL = window.location.hostname === 'localhost'
 const config = {
   type: Phaser.AUTO,
   width: window.innerWidth,
-  height: window.innerHeight,
-  backgroundColor: '#222222',
+  height: window.innerHeight *0.8,
+  backgroundColor: '#111111',
   scene: [LobbyScene, GameScene, TypingGame],
   physics: {
     default: 'arcade',

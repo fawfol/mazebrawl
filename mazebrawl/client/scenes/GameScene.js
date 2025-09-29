@@ -16,23 +16,18 @@ export default class GameScene extends Phaser.Scene {
     console.log('GameScene started');
 
     document.body.innerHTML = '';
-    
-    // This listener is correct, as it waits for the specific game (e.g. TypingRace) to start
+
+    // Delegate game start logic
     this.socket.on('startGame', (gameType, sentence) => {
       console.log('startGame received:', gameType);
-      if (gameType === 'TypingRace') {
-        this.statusText.innerText = 'Typing Race Starting...';
-        
-        document.body.querySelectorAll('div').forEach(el => el.remove());
-
-        this.scene.stop('GameScene');
-        this.scene.start('TypingGame', {
-            players: this.players,
-            myIndex: this.myIndex,
-            socket: this.socket,
-            sentence: sentence
-        });
-      }
+      
+      this.scene.stop('GameScene');
+      this.scene.start(gameType, { 
+          players: this.players,
+          myIndex: this.myIndex,
+          socket: this.socket,
+          sentence: sentence
+      });
     });
 
     this.domContainer = document.createElement('div');
@@ -48,7 +43,7 @@ export default class GameScene extends Phaser.Scene {
       alignItems: 'center',
       justifyContent: 'center',
       background: '#333',
-      color : '#fff',
+      color: '#fff',
       fontFamily: 'sans-serif',
       gap: '1rem',
       padding: '20px',
@@ -64,14 +59,13 @@ export default class GameScene extends Phaser.Scene {
 
     if (this.isLeader) {
       this.renderGameSelectionUI();
-    } else {
-      this.renderChatBox();
     }
+    this.renderChatBox();
 
-	this.socket.off('gameChatMessage');
-	this.socket.on('gameChatMessage', (data) => {
-	  this.addChatMessage(`${data.name}: ${data.text}`);
-	});
+    this.socket.off('gameChatMessage');
+    this.socket.on('gameChatMessage', (data) => {
+      this.addChatMessage(`${data.name}: ${data.text}`);
+    });
   }
 
   renderGameSelectionUI() {
@@ -80,29 +74,33 @@ export default class GameScene extends Phaser.Scene {
     gameList.style.flexDirection = 'column';
     gameList.style.gap = '0.5rem';
 
+    // Typing Race Button
     const typingRaceBtn = document.createElement('button');
     typingRaceBtn.innerText = 'Start Typing Race';
-    typingRaceBtn.style.padding = '10px 20px';
-    typingRaceBtn.style.fontSize = '1.2rem';
-    typingRaceBtn.style.cursor = 'pointer';
-
+    Object.assign(typingRaceBtn.style, { padding: '10px 20px', fontSize: '1.2rem', cursor: 'pointer' });
     typingRaceBtn.onclick = () => {
       this.statusText.innerText = 'Starting Typing Race...';
-      // UPDATED: Use the new 'selectGame' event
       this.socket.emit('selectGame', 'TypingRace', (response) => {
         if (!response.success) {
           this.statusText.innerText = response.message;
         }
       });
     };
-
     gameList.appendChild(typingRaceBtn);
-    this.domContainer.appendChild(gameList);
 
-    this.renderChatBox();
+    // Add more game buttons here
+    // const newGameBtn = document.createElement('button');
+    // newGameBtn.innerText = 'Start New Game';
+    // newGameBtn.onclick = () => {
+    //   this.socket.emit('selectGame', 'NewGame', (response) => { ... });
+    // };
+    // gameList.appendChild(newGameBtn);
+
+    this.domContainer.appendChild(gameList);
   }
 
   renderChatBox() {
+    // ... (rest of the renderChatBox and related methods are unchanged)
     this.chatContainer = document.createElement('div');
     Object.assign(this.chatContainer.style, {
       display: 'flex',
@@ -150,14 +148,13 @@ export default class GameScene extends Phaser.Scene {
       if (e.key === 'Enter') this.sendChatMessage();
     });
   }
-
-  sendChatMessage() {
-	const text = this.chatInput.value.trim();
-	if (!text) return;
-	
-	this.socket.emit('gameChatMessage', text);
-	this.chatInput.value = '';
-  }
+  
+	sendChatMessage() {
+		const text = this.chatInput.value.trim();
+		if (!text) return;
+		this.socket.emit('gameChatMessage', text);
+		this.chatInput.value = '';
+	}
 
   addChatMessage(msg) {
     const p = document.createElement('p');
@@ -166,7 +163,7 @@ export default class GameScene extends Phaser.Scene {
     this.chatContainer.appendChild(p);
     this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
   }
-  
+
   shutdown() {
     console.log('GameScene shutting down, removing listeners.');
     this.socket.off('startGame');

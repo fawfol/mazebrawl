@@ -80,7 +80,7 @@ export default class TypingGame extends Phaser.Scene {
     startBlock.innerText = 'START';
     track.appendChild(startBlock);
 
-    // Word Blocks
+    //word Blocks
     this.words.forEach(word => {
       const wordBlock = document.createElement('div');
       wordBlock.className = 'block';
@@ -89,16 +89,16 @@ export default class TypingGame extends Phaser.Scene {
       this.wordBlocks.push(wordBlock);
     });
 
-    // Finish Block
+    //finish Block
     const finishBlock = document.createElement('div');
     finishBlock.className = 'block start-finish';
     finishBlock.innerText = 'FINISH';
     track.appendChild(finishBlock);
 
     this.container.appendChild(track);
-    this.trackElement = track; // Save reference for positioning
+    this.trackElement = track; //save reference for positioning
 
-    // Player Characters
+    //player Characters
     const playerEmojis = ['🏃', '🏇', '🚴', '🤸', '🚶', '🤾', '💃'];
     this.players.forEach((p, index) => {
         const char = document.createElement('div');
@@ -119,7 +119,7 @@ export default class TypingGame extends Phaser.Scene {
       maxWidth: '1000px'
     });
     
-    this.progressBars = {}; // To hold progress bar elements
+    this.progressBars = {}; //to hold progress bar elements
 
     this.players.forEach(p => {
       const barContainer = document.createElement('div');
@@ -154,7 +154,7 @@ export default class TypingGame extends Phaser.Scene {
       
       const percentage = document.createElement('span');
       percentage.innerText = '0%';
-      percentage.style.width = '40px'; // Align percentages
+      percentage.style.width = '40px'; //align percentages
       
       bar.appendChild(fill);
       barWrapper.appendChild(nameLabel);
