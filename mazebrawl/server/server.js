@@ -96,7 +96,7 @@ io.on('connection', (socket) => {
       if (room.players.some(p => p.id === socket.id)) {
         if (room.leaderId !== socket.id) return;
 
-        const minPlayers = 3;
+        const minPlayers = 2;
         const othersReady = room.players.filter(p => p.id !== socket.id).every(p => p.ready);
 
         if (room.players.length < minPlayers) {
