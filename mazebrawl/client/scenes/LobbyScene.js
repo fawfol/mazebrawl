@@ -302,7 +302,7 @@ export default class LobbyScene extends Phaser.Scene {
     this.playerListDiv.innerHTML = '';
 
     const maxPlayers = data.maxPlayers || 7;
-    this.capacityText.innerText = `Players: ${data.players.length}/${maxPlayers} (minimum 3 required)`;
+    this.capacityText.innerText = `Players: ${data.players.length}/${maxPlayers} (minimum 2 required)`;
 
     data.players.forEach((player, index) => {
         const playerDiv = document.createElement('div');
@@ -333,7 +333,7 @@ export default class LobbyScene extends Phaser.Scene {
     }
 
     if (this.socket.id === data.leaderId) {
-        const minPlayers = 3;
+        const minPlayers = 2;
         const othersReady = data.players.filter(p => p.id !== data.leaderId).every(p => p.ready);
         this.startBtn.disabled = !(data.players.length >= minPlayers && othersReady);
     }

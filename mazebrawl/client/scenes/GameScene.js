@@ -18,17 +18,19 @@ export default class GameScene extends Phaser.Scene {
     document.body.innerHTML = '';
 
     // Delegate game start logic
-    this.socket.on('startGame', (gameType, sentence) => {
-      console.log('startGame received:', gameType);
-      
-      this.scene.stop('GameScene');
-      this.scene.start(gameType, { 
-          players: this.players,
-          myIndex: this.myIndex,
-          socket: this.socket,
-          sentence: sentence
-      });
-    });
+    this.socket.on('startGame', (gameType, sentence, extra) => {
+  console.log('startGame received:', gameType, sentence, extra);
+  
+  this.scene.stop('GameScene');
+  this.scene.start(gameType, { 
+      players: this.players,
+      myIndex: this.myIndex,
+      socket: this.socket,
+      sentence: sentence,
+      round: extra?.round,
+      maxRounds: extra?.maxRounds
+  });
+});
 
     this.domContainer = document.createElement('div');
     this.domContainer.className = 'game-container';
@@ -42,7 +44,7 @@ export default class GameScene extends Phaser.Scene {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#333',
+      background: '#222',
       color: '#fff',
       fontFamily: 'sans-serif',
       gap: '1rem',

@@ -1,3 +1,4 @@
+//mazebrawl/client/scenes/TypingGame.js
 export default class TypingGame extends Phaser.Scene {
   constructor() {
     super({ key: 'TypingGame' });
@@ -8,18 +9,79 @@ export default class TypingGame extends Phaser.Scene {
     this.players = data.players;
     this.myIndex = data.myIndex;
     this.sentence = data.sentence || 'The race is about to begin.';
-    
+    this.round = data.round || 1;
+    this.maxRounds = data.maxRounds || 5;
+
     this.words = this.sentence.split(' ');
     this.currentWordIndex = 0;
 
-    this.playerChars = {}; // To hold character DOM elements
-    this.wordBlocks = [];  // To hold word block DOM elements
+    this.playerChars = {}; // character DOM elements
+    this.wordBlocks = [];
   }
+
+
+	//round end modal
+	showRoundResults(scores) {
+    // create overlay
+    const overlay = document.createElement('div');
+    Object.assign(overlay.style, {
+        position: 'fixed',
+        top: '0', left: '0',
+        width: '100%', height: '100%',
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+    });
+
+    const box = document.createElement('div');
+    Object.assign(box.style, {
+        background: '#222',
+        color: '#fff',
+        padding: '20px',
+        borderRadius: '10px',
+        textAlign: 'center',
+        minWidth: '300px'
+    });
+
+    const title = document.createElement('h2');
+    title.innerText = `Round ${this.round} Results`;
+    box.appendChild(title);
+
+    const list = document.createElement('div');
+    Object.entries(scores).forEach(([id, score]) => {
+        const p = document.createElement('p');
+        const player = this.players.find(pl => pl.id === id);
+        p.innerText = `${player.name}: ${score}`;
+        list.appendChild(p);
+    });
+    box.appendChild(list);
+
+    const btn = document.createElement('button');
+    btn.innerText = 'Continue';
+    btn.onclick = () => overlay.remove();
+    Object.assign(btn.style, {
+        marginTop: '15px',
+        padding: '8px 16px',
+        fontSize: '16px',
+        cursor: 'pointer',
+        background: '#444',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px'
+    });
+    box.appendChild(btn);
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+}
+
 
   create() {
     document.body.innerHTML = '';
 
-    // Main container
+    //main container
     this.container = document.createElement('div');
     Object.assign(this.container.style, {
       display: 'flex',
@@ -35,10 +97,15 @@ export default class TypingGame extends Phaser.Scene {
     });
     document.body.appendChild(this.container);
 
-    // --- 1. Create the Race Track UI ---
+    //round info
+    this.roundText = document.createElement('h2');
+    this.roundText.innerText = `Round ${this.round} / ${this.maxRounds}`;
+    this.container.appendChild(this.roundText);
+
+    //create race track
     this.createRaceTrack();
 
-    // --- 2. Create the Input Box ---
+    //input box
     this.input = document.createElement('input');
     this.input.type = 'text';
     this.input.placeholder = 'Type the highlighted word and press space...';
@@ -53,34 +120,53 @@ export default class TypingGame extends Phaser.Scene {
     });
     this.container.appendChild(this.input);
     this.input.focus();
-    
-    // --- 3. Create Player Progress Bars ---
+
+    //progress bars
     this.createProgressBars();
-    
-    // --- 4. Setup Event Listeners ---
+
+    //event listeners
     this.input.addEventListener('keydown', this.handleInput.bind(this));
     this.socket.on('updateProgress', ({ playerId, progress }) => {
       this.updateCharacterPosition(playerId, progress);
     });
 
-    // Initial UI setup
+	this.socket.off('roundEnded'); // prevent duplicate listeners
+	this.socket.on('roundEnded', ({ scores, finishOrder }) => {
+	  this.showRoundResults(scores);
+	});
+
+
+    this.socket.on('gameEnded', ({ rankedPlayers }) => {
+      let msg = 'Game Over! Final Rankings:\n';
+      rankedPlayers.forEach(p => {
+        const player = this.players.find(pl => pl.id === p.id);
+        msg += `${p.place}. ${player.name} (${p.score} pts)\n`;
+      });
+      alert(msg);
+      //return to lobby/home
+      window.location.reload();
+    });
+
+    //initial UI update
     this.updateBlockStyles();
     this.players.forEach(p => this.updateCharacterPosition(p.id, 0));
   }
-  
-  // --- UI Creation Methods ---
-  
+
+  // --- UI Creation ---
+
   createRaceTrack() {
     const track = document.createElement('div');
     track.className = 'race-track';
+    track.style.display = 'flex';
+    track.style.alignItems = 'flex-end';
+    track.style.gap = '5px';
+    track.style.marginBottom = '20px';
     
-    // Start Block
     const startBlock = document.createElement('div');
     startBlock.className = 'block start-finish';
     startBlock.innerText = 'START';
     track.appendChild(startBlock);
 
-    //word Blocks
     this.words.forEach(word => {
       const wordBlock = document.createElement('div');
       wordBlock.className = 'block';
@@ -89,52 +175,48 @@ export default class TypingGame extends Phaser.Scene {
       this.wordBlocks.push(wordBlock);
     });
 
-    //finish Block
     const finishBlock = document.createElement('div');
     finishBlock.className = 'block start-finish';
     finishBlock.innerText = 'FINISH';
     track.appendChild(finishBlock);
 
     this.container.appendChild(track);
-    this.trackElement = track; //save reference for positioning
+    this.trackElement = track;
 
-    //player Characters
-    const playerEmojis = ['🏃', '🏇', '🚴', '🤸', '🚶', '🤾', '💃'];
-    this.players.forEach((p, index) => {
-        const char = document.createElement('div');
-        char.className = 'player-char';
-        char.innerText = playerEmojis[index % playerEmojis.length];
-        track.appendChild(char);
-        this.playerChars[p.id] = char;
+    // player characters
+    const emojis = ['🏃','🏇','🚴','🤸','🚶','🤾','💃'];
+    this.players.forEach((p, idx) => {
+      const char = document.createElement('div');
+      char.className = 'player-char';
+      char.innerText = emojis[idx % emojis.length];
+      char.style.position = 'absolute';
+      char.style.bottom = '100px';
+      char.style.transition = 'left 0.3s';
+      track.appendChild(char);
+      this.playerChars[p.id] = char;
     });
   }
 
   createProgressBars() {
-    const progressContainer = document.createElement('div');
-    Object.assign(progressContainer.style, {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      width: '90%',
-      maxWidth: '1000px'
-    });
-    
-    this.progressBars = {}; //to hold progress bar elements
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '8px';
+    container.style.width = '90%';
+    container.style.maxWidth = '1000px';
+
+    this.progressBars = {};
 
     this.players.forEach(p => {
-      const barContainer = document.createElement('div');
-      
-      const barWrapper = document.createElement('div');
-      Object.assign(barWrapper.style, {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      });
-      
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.alignItems = 'center';
+      wrapper.style.gap = '10px';
+
       const nameLabel = document.createElement('span');
       nameLabel.innerText = p.name;
       nameLabel.style.width = '100px';
-      
+
       const bar = document.createElement('div');
       Object.assign(bar.style, {
         height: '15px',
@@ -143,32 +225,32 @@ export default class TypingGame extends Phaser.Scene {
         borderRadius: '5px',
         overflow: 'hidden'
       });
-      
+
       const fill = document.createElement('div');
       Object.assign(fill.style, {
         height: '100%',
         width: '0%',
         background: 'lime',
-        transition: 'width 0.3s ease-in-out'
+        transition: 'width 0.3s'
       });
-      
+
       const percentage = document.createElement('span');
       percentage.innerText = '0%';
-      percentage.style.width = '40px'; //align percentages
-      
+      percentage.style.width = '40px';
+
       bar.appendChild(fill);
-      barWrapper.appendChild(nameLabel);
-      barWrapper.appendChild(bar);
-      barWrapper.appendChild(percentage);
-      barContainer.appendChild(barWrapper);
-      progressContainer.appendChild(barContainer);
+      wrapper.appendChild(nameLabel);
+      wrapper.appendChild(bar);
+      wrapper.appendChild(percentage);
+      container.appendChild(wrapper);
 
       this.progressBars[p.id] = { fill, percentage };
     });
-    this.container.appendChild(progressContainer);
+
+    this.container.appendChild(container);
   }
 
-  // --- Gameplay and Update Methods ---
+  // --- Gameplay ---
 
   handleInput(e) {
     if (e.key !== ' ' && e.code !== 'Space') return;
@@ -184,8 +266,6 @@ export default class TypingGame extends Phaser.Scene {
 
       const progress = this.currentWordIndex / this.words.length;
       this.socket.emit('typingProgress', progress);
-      
-      // Local update for instant feedback
       this.updateCharacterPosition(this.socket.id, progress);
       this.updateBlockStyles();
 
@@ -201,13 +281,9 @@ export default class TypingGame extends Phaser.Scene {
 
   updateBlockStyles() {
     this.wordBlocks.forEach((block, index) => {
-      if (index < this.currentWordIndex) {
-        block.className = 'block completed';
-      } else if (index === this.currentWordIndex) {
-        block.className = 'block current';
-      } else {
-        block.className = 'block';
-      }
+      if (index < this.currentWordIndex) block.className = 'block completed';
+      else if (index === this.currentWordIndex) block.className = 'block current';
+      else block.className = 'block';
     });
   }
 
@@ -216,27 +292,24 @@ export default class TypingGame extends Phaser.Scene {
     const bar = this.progressBars[playerId];
     if (!char || !bar) return;
 
-    // Update progress bar
-    const percentage = (progress * 100).toFixed(0);
-    bar.fill.style.width = `${percentage}%`;
-    bar.percentage.innerText = `${percentage}%`;
-    
-    // Move character on the track
-    const totalBlocks = this.words.length + 1; // +1 for start block
-    const targetBlockIndex = Math.floor(progress * totalBlocks);
+    // progress bar
+    const percent = (progress * 100).toFixed(0);
+    bar.fill.style.width = `${percent}%`;
+    bar.percentage.innerText = `${percent}%`;
 
-    let targetElement;
-    if (progress >= 1) {
-        targetElement = this.trackElement.querySelector('.block.start-finish:last-child');
-    } else {
-        targetElement = this.trackElement.children[targetBlockIndex];
-    }
-    
-    if (targetElement) {
+    // track position
+    const totalBlocks = this.words.length + 1;
+    const targetIndex = Math.floor(progress * totalBlocks);
+
+    let targetEl = (progress >= 1) ? 
+      this.trackElement.querySelector('.block.start-finish:last-child') :
+      this.trackElement.children[targetIndex];
+
+    if (targetEl) {
       const trackRect = this.trackElement.getBoundingClientRect();
-      const targetRect = targetElement.getBoundingClientRect();
-      const centerOfBlock = (targetRect.left - trackRect.left) + targetRect.width / 2;
-      char.style.left = `${centerOfBlock}px`;
+      const targetRect = targetEl.getBoundingClientRect();
+      const center = (targetRect.left - trackRect.left) + targetRect.width / 2;
+      char.style.left = `${center}px`;
     }
   }
 }

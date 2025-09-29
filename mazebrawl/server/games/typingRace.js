@@ -61,11 +61,21 @@ class TypingRace {
   }
 
   handlePlayerFinish(playerId) {
-    if (!this.finishOrder.includes(playerId)) this.finishOrder.push(playerId);
-    this.scores[playerId] += 1; // 1 point per finish
+    if (!this.finishOrder.includes(playerId)) {
+        this.finishOrder.push(playerId);
+
+        const position = this.finishOrder.length;
+        let points = 0;
+        if (position === 1) points = 3;
+        else if (position === 2) points = 2;
+        else if (position === 3) points = 1;
+
+        this.scores[playerId] += points;
+    }
 
     if (this.finishOrder.length === this.players.length) this.endRound();
-  }
+}
+
 
   endRound() {
     this.io.to(this.roomId).emit('roundEnded', {
