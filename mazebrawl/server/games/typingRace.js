@@ -1,8 +1,8 @@
-// mazebrawl/server/games/typingRace.js
+//mazebrawl/server/games/typingRace.js
+
 
 const https = require('https');
 
-//default sentences to use if the API fetch fails
 const defaultSentences = [
   "The quick brown fox jumps over the lazy dog.",
   "Never underestimate the power of a good book.",
@@ -15,113 +15,102 @@ class TypingRace {
   constructor(io, roomId, players) {
     this.io = io;
     this.roomId = roomId;
-    this.players = players; // array of {id, name}
+    this.players = players;
     this.progress = {}; // { playerId: 0..1 }
+    this.scores = {};   // total scores
+    this.round = 1;
+    this.maxRounds = 5;
 
-    // initialize progress for all players
-    players.forEach(p => this.progress[p.id] = 0);
+    players.forEach(p => {
+      this.progress[p.id] = 0;
+      this.scores[p.id] = 0;
+    });
 
     this.setupSocketListeners();
-    this.startGameWithQuote();
+    this.startRound();
   }
 
-  /**
-   * Fetches a random quote from the quotable.io API within a specific length range.
-   * @returns {Promise<string|null>} A promise that resolves with the quote content or null on failure.
-   */
-  fetchQuote() {
-    return new Promise((resolve) => {
-      const options = {
-        hostname: 'api.quotable.io',
-        path: '/random?minLength=70&maxLength=150', // Fetch quotes between 70 and 150 chars
-        method: 'GET',
-        headers: {
-          'User-Agent': 'Node.js'
-        }
-      };
+  setupSocketListeners() {
+    // can add additional per-game listeners here if needed
+  }
 
-      const req = https.get(options, (res) => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          console.error(`API request failed with status code: ${res.statusCode}`);
-          return resolve(null);
-        }
+  async startRound() {
+    let sentence = await this.fetchQuote() || this.getRandomDefaultSentence();
+    this.sentence = sentence;
 
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
+    // reset per-round state
+    this.progress = {};
+    this.finishOrder = [];
+    this.players.forEach(p => this.progress[p.id] = 0);
 
-        res.on('end', () => {
-          try {
-            const parsedData = JSON.parse(data);
-            // The API might return an array of quotes when filtering
-            const quote = Array.isArray(parsedData) ? parsedData[0] : parsedData;
-            resolve(quote.content);
-          } catch (e) {
-            console.error("Failed to parse quote API response:", e);
-            resolve(null);
-          }
-        });
-      });
-
-      req.on('error', (e) => {
-        console.error("Failed to fetch quote due to network error:", e);
-        resolve(null);
-      });
+    // broadcast to all players in room
+    this.io.to(this.roomId).emit('startGame', 'TypingGame', this.sentence, {
+      round: this.round,
+      maxRounds: this.maxRounds
     });
+
+    // also emit initial progress for new/late joining players
+    this.io.to(this.roomId).emit('updateProgress', { playerId: null, progress: this.progress });
   }
 
+  updateProgress(playerId, prog) {
+    this.progress[playerId] = prog;
+    this.io.to(this.roomId).emit('updateProgress', { playerId, progress: prog });
 
-  /**
-   * Gets a random sentence from the default list.
-   * @returns {string} A random default sentence.
-   */
+    if (prog >= 1) this.handlePlayerFinish(playerId);
+  }
+
+  handlePlayerFinish(playerId) {
+    if (!this.finishOrder.includes(playerId)) this.finishOrder.push(playerId);
+    this.scores[playerId] += 1; // 1 point per finish
+
+    if (this.finishOrder.length === this.players.length) this.endRound();
+  }
+
+  endRound() {
+    this.io.to(this.roomId).emit('roundEnded', {
+      scores: this.scores,
+      finishOrder: this.finishOrder
+    });
+
+    this.round++;
+    if (this.round <= this.maxRounds) {
+      setTimeout(() => this.startRound(), 3000); // 3 sec delay
+    } else {
+      this.endGame();
+    }
+
+    this.finishOrder = [];
+  }
+
+  endGame() {
+    const rankedPlayers = Object.entries(this.scores)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, score], idx) => ({ id, score, place: idx + 1 }));
+
+    this.io.to(this.roomId).emit('gameEnded', { rankedPlayers });
+  }
+
   getRandomDefaultSentence() {
     return defaultSentences[Math.floor(Math.random() * defaultSentences.length)];
   }
 
-  /**
-   * Starts the game by fetching a quote or using a default sentence,
-   * then emits the 'startGame' event to all clients in the room.
-   */
-  async startGameWithQuote() {
-    let sentence = await this.fetchQuote();
-
-    // If fetching the quote failed, use one of the default sentences
-    if (!sentence) {
-      console.log("Using a default sentence as fallback.");
-      sentence = this.getRandomDefaultSentence();
-    }
-
-    this.sentence = sentence;
-    this.io.to(this.roomId).emit('startGame', 'TypingGame', this.sentence);
-  }
-
-  /**
-   * Sets up socket listeners for each player to handle typing progress.
-   */
-  setupSocketListeners() {
-    this.players.forEach(p => {
-      const socket = this.io.sockets.sockets.get(p.id);
-      if (socket) {
-        //good practice to remove old listeners to prevent duplicates if games restart
-        socket.removeAllListeners('typingProgress');
-        socket.on('typingProgress', prog => this.updateProgress(p.id, prog));
-      }
+  async fetchQuote() {
+    return new Promise((resolve) => {
+      https.get('https://api.quotable.io/random', res => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try {
+            const quote = JSON.parse(data).content;
+            resolve(quote);
+          } catch {
+            resolve(null);
+          }
+        });
+      }).on('error', () => resolve(null));
     });
-  }
-
-  /**
-   * Updates a player's progress and broadcasts it to the room.
-   * @param {string} playerId The ID of the player.
-   * @param {number} prog The new progress value (0 to 1).
-   */
-  updateProgress(playerId, prog) {
-    this.progress[playerId] = prog;
-    // broadcast to other players
-    this.io.to(this.roomId).emit('updateProgress', { playerId, progress: prog });
   }
 }
 
 module.exports = TypingRace;
-

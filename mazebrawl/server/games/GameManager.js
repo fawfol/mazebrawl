@@ -1,11 +1,9 @@
-// mazebrawl/server/games/GameManager.js
-
 const TypingRace = require('./typingRace.js');
 
 class GameManager {
   constructor(io, rooms) {
     this.io = io;
-    this.rooms = rooms; // Reference to the main rooms map
+    this.rooms = rooms; // Reference to main rooms map
     this.activeGames = new Map(); // roomId => gameInstance
   }
 
@@ -20,10 +18,6 @@ class GameManager {
       case 'TypingRace':
         gameInstance = new TypingRace(this.io, roomId, players);
         break;
-      // Add more cases for future games here
-      // case 'NewGame':
-      //   gameInstance = new NewGame(this.io, roomId, players);
-      //   break;
       default:
         if (callback) callback({ success: false, message: 'Invalid game type.' });
         return;
@@ -35,21 +29,24 @@ class GameManager {
   }
 
   handleGameEvent(playerId, eventType, data) {
-    const room = Array.from(this.rooms.values()).find(r => r.players.some(p => p.id === playerId));
-    if (!room) return;
+    const roomEntry = Array.from(this.rooms.entries()).find(([roomId, room]) =>
+      room.players.some(p => p.id === playerId)
+    );
 
-    const gameInstance = this.activeGames.get(room.id);
-    if (gameInstance) {
-      switch (eventType) {
-        case 'typingProgress':
-          if (gameInstance.updateProgress) {
-            gameInstance.updateProgress(playerId, data);
-          }
-          break;
-        // Add more cases for handling other game events
-        default:
-          console.warn(`Unhandled game event: ${eventType}`);
-      }
+    if (!roomEntry) return;
+
+    const [roomId, room] = roomEntry;
+    const gameInstance = this.activeGames.get(roomId);
+    if (!gameInstance) return;
+
+    switch (eventType) {
+      case 'typingProgress':
+        if (gameInstance.updateProgress) {
+          gameInstance.updateProgress(playerId, data);
+        }
+        break;
+      default:
+        console.warn(`Unhandled game event: ${eventType}`);
     }
   }
 
