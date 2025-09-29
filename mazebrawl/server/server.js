@@ -4,7 +4,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
-const TypingRace = require('./games/typingRace.js');
+const GameManager = require('./games/GameManager.js'); // Import the new GameManager
 
 const app = express();
 const server = http.createServer(app);
@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
 // --- ROOM MANAGEMENT ---
-const rooms = new Map();        // roomId => { players: [{id,name,ready}], leaderId }
-const activeGames = new Map();  // roomId => gameInstance
+const rooms = new Map();
+const activeGames = new GameManager(io, rooms); // Instantiate GameManager
 
 function generateRoomID() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -41,7 +41,7 @@ function broadcastRoomUpdate(roomId) {
 io.on('connection', (socket) => {
   console.log(`New connection: ${socket.id}`);
 
-  // --- CREATE ROOM ---
+  // --- ROOM EVENTS ---
   socket.on('createRoom', (playerName, callback) => {
     if (typeof callback !== 'function') return;
 
@@ -62,7 +62,6 @@ io.on('connection', (socket) => {
     callback({ success: true, roomId, leaderId: socket.id, players: room.players });
   });
 
-  // --- JOIN ROOM ---
   socket.on('joinRoom', (roomId, playerName, callback) => {
     if (typeof callback !== 'function') return;
 
@@ -80,7 +79,6 @@ io.on('connection', (socket) => {
     console.log(`${playerName} joined room ${roomId}`);
   });
 
-  // --- TOGGLE READY ---
   socket.on('toggleReady', () => {
     for (const [roomId, room] of rooms.entries()) {
       const player = room.players.find(p => p.id === socket.id);
@@ -92,66 +90,55 @@ io.on('connection', (socket) => {
       }
     }
   });
-  
-  // --- START FROM LOBBY ---
+
   socket.on('lobbyStart', (callback) => {
     for (const [roomId, room] of rooms.entries()) {
-        if (room.players.some(p => p.id === socket.id)) {
-            if (room.leaderId !== socket.id) return; // only leader
+      if (room.players.some(p => p.id === socket.id)) {
+        if (room.leaderId !== socket.id) return;
 
-            const minPlayers = 3;
-            const othersReady = room.players.filter(p => p.id !== socket.id).every(p => p.ready);
+        const minPlayers = 3;
+        const othersReady = room.players.filter(p => p.id !== socket.id).every(p => p.ready);
 
-            if (room.players.length < minPlayers) {
-                if (callback) callback({ success: false, message: 'Not enough players (min 3)' });
-                return;
-            }
-            if (!othersReady) {
-                if (callback) callback({ success: false, message: 'All players must be ready' });
-                return;
-            }
-            
-            //tell all clients to move from Lobby to GameScene
-            io.to(roomId).emit('gameHasStarted');
-            console.log(`Session started in room ${roomId}. Moving to GameScene.`);
-            if (callback) callback({ success: true });
-            break;
+        if (room.players.length < minPlayers) {
+          if (callback) callback({ success: false, message: 'Not enough players (min 3)' });
+          return;
         }
-    }
-  });
-
-  // --- SELECT A SPECIFIC GAME FROM GAMESCENE ---
-  socket.on('selectGame', (gameType, callback) => {
-    for (const [roomId, room] of rooms.entries()) {
-        if (room.players.some(p => p.id === socket.id)) {
-            if (room.leaderId !== socket.id) return; // only leader
-
-            // Start the actual game instance
-            if (gameType === 'TypingRace') {
-                const gameInstance = new TypingRace(io, roomId, room.players);
-                activeGames.set(roomId, gameInstance);
-                console.log(`TypingRace game started in room ${roomId}`);
-            }
-            // Add other game types here with else if(...)
-            
-            if (callback) callback({ success: true });
-            break;
+        if (!othersReady) {
+          if (callback) callback({ success: false, message: 'All players must be ready' });
+          return;
         }
-    }
-  });
 
-
-  // --- TYPING PROGRESS (handled in game module) ---
-  socket.on('typingProgress', (progress) => {
-    // TypingRace instance handles broadcasting updates
-    for (const [roomId, game] of activeGames.entries()) {
-      if (game.progress.hasOwnProperty(socket.id)) {
-        game.updateProgress(socket.id, progress);
+        io.to(roomId).emit('gameHasStarted');
+        console.log(`Session started in room ${roomId}. Moving to GameScene.`);
+        if (callback) callback({ success: true });
+        break;
       }
     }
   });
 
-  // --- LEAVE ROOM ---
+  // --- GAME EVENTS (Delegated to GameManager) ---
+  socket.on('selectGame', (gameType, callback) => {
+  let playerRoomId = null;
+  let playerRoom = null;
+  for (const [roomId, room] of rooms.entries()) {
+    if (room.players.some(p => p.id === socket.id)) {
+      playerRoomId = roomId;
+      playerRoom = room;
+      break;
+    }
+  }
+  if (playerRoom && playerRoom.leaderId === socket.id) {
+    activeGames.startNewGame(playerRoomId, gameType, playerRoom.players, callback);
+  } else {
+    if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
+  }
+});
+
+
+  socket.on('typingProgress', (progress) => {
+    activeGames.handleGameEvent(socket.id, 'typingProgress', progress);
+  });
+
   socket.on('leaveRoom', (callback) => {
     let found = false;
     rooms.forEach((room, roomId) => {
@@ -167,10 +154,9 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('leaderChanged', newLeader);
           }
         }
-
         if (room.players.length === 0) {
           rooms.delete(roomId);
-          activeGames.delete(roomId);
+          activeGames.endGame(roomId);
           console.log(`Room ${roomId} deleted (empty)`);
         } else {
           io.to(roomId).emit('playerLeft', leftPlayer);
@@ -182,34 +168,30 @@ io.on('connection', (socket) => {
     if (callback) callback({ success: found });
   });
 
-  //-- MESSAGE LISTENER ---
-	socket.on('gameChatMessage', (msg) => {
-	  // Find the room of this socket
-	  let playerRoomId = null;
-	  for (const [roomId, room] of rooms.entries()) {
-		if (room.players.some(p => p.id === socket.id)) {
-		  playerRoomId = roomId;
-		  break;
-		}
-	  }
+  socket.on('gameChatMessage', (msg) => {
+    let playerRoomId = null;
+    for (const [roomId, room] of rooms.entries()) {
+      if (room.players.some(p => p.id === socket.id)) {
+        playerRoomId = roomId;
+        break;
+      }
+    }
 
-	  if (playerRoomId) {
-		const room = rooms.get(playerRoomId);
-		const player = room.players.find(p => p.id === socket.id);
+    if (playerRoomId) {
+      const room = rooms.get(playerRoomId);
+      const player = room.players.find(p => p.id === socket.id);
 
-		if (player) {
-		  io.to(playerRoomId).emit('gameChatMessage', {
-		    name: player.name,
-		    text: msg
-		  });
-		}
-	  }
-	});
+      if (player) {
+        io.to(playerRoomId).emit('gameChatMessage', {
+          name: player.name,
+          text: msg
+        });
+      }
+    }
+  });
 
-  // --- DISCONNECT ---
   socket.on('disconnect', () => {
     console.log(`Disconnected: ${socket.id}`);
-    // same as leaveRoom logic
     rooms.forEach((room, roomId) => {
       const index = room.players.findIndex(p => p.id === socket.id);
       if (index !== -1) {
@@ -223,10 +205,9 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('leaderChanged', newLeader);
           }
         }
-
         if (room.players.length === 0) {
           rooms.delete(roomId);
-          activeGames.delete(roomId);
+          activeGames.endGame(roomId);
           console.log(`Room ${roomId} deleted (empty)`);
         } else {
           io.to(roomId).emit('playerLeft', leftPlayer);
@@ -235,7 +216,6 @@ io.on('connection', (socket) => {
       }
     });
   });
-
 });
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

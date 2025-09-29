@@ -2,7 +2,7 @@
 
 const https = require('https');
 
-// Default sentences to use if the API fetch fails
+//default sentences to use if the API fetch fails
 const defaultSentences = [
   "The quick brown fox jumps over the lazy dog.",
   "Never underestimate the power of a good book.",
@@ -94,7 +94,7 @@ class TypingRace {
     }
 
     this.sentence = sentence;
-    this.io.to(this.roomId).emit('startGame', 'TypingRace', this.sentence);
+    this.io.to(this.roomId).emit('startGame', 'TypingGame', this.sentence);
   }
 
   /**
@@ -104,7 +104,7 @@ class TypingRace {
     this.players.forEach(p => {
       const socket = this.io.sockets.sockets.get(p.id);
       if (socket) {
-        // It's good practice to remove old listeners to prevent duplicates if games restart
+        //good practice to remove old listeners to prevent duplicates if games restart
         socket.removeAllListeners('typingProgress');
         socket.on('typingProgress', prog => this.updateProgress(p.id, prog));
       }
