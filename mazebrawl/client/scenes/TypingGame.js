@@ -22,61 +22,124 @@ export default class TypingGame extends Phaser.Scene {
 
 	//round end modal
 	showRoundResults(scores) {
-    // create overlay
-    const overlay = document.createElement('div');
-    Object.assign(overlay.style, {
-        position: 'fixed',
-        top: '0', left: '0',
-        width: '100%', height: '100%',
-        background: 'rgba(0,0,0,0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000
-    });
+		const overlay = document.createElement('div');
+		Object.assign(overlay.style, {
+		    position: 'fixed', top: '0', left: '0',
+		    width: '100%', height: '100%',
+		    background: 'rgba(0,0,0,0.7)',
+		    display: 'flex',
+		    alignItems: 'center',
+		    justifyContent: 'center',
+		    zIndex: 1000
+		});
 
-    const box = document.createElement('div');
-    Object.assign(box.style, {
-        background: '#222',
-        color: '#fff',
-        padding: '20px',
-        borderRadius: '10px',
-        textAlign: 'center',
-        minWidth: '300px'
-    });
+		const box = document.createElement('div');
+		Object.assign(box.style, {
+		    background: '#222',
+		    color: '#fff',
+		    padding: '20px',
+		    borderRadius: '10px',
+		    textAlign: 'center',
+		    minWidth: '300px'
+		});
 
-    const title = document.createElement('h2');
-    title.innerText = `Round ${this.round} Results`;
-    box.appendChild(title);
+		const title = document.createElement('h2');
+		title.innerText = `Round ${this.round - 1} Results`; // previous round
+		box.appendChild(title);
 
-    const list = document.createElement('div');
-    Object.entries(scores).forEach(([id, score]) => {
-        const p = document.createElement('p');
-        const player = this.players.find(pl => pl.id === id);
-        p.innerText = `${player.name}: ${score}`;
-        list.appendChild(p);
-    });
-    box.appendChild(list);
+		const list = document.createElement('div');
+		Object.entries(scores).forEach(([id, score]) => {
+		    const p = document.createElement('p');
+		    const player = this.players.find(pl => pl.id === id);
+		    p.innerText = `${player.name}: ${score}`;
+		    list.appendChild(p);
+		});
+		box.appendChild(list);
 
-    const btn = document.createElement('button');
-    btn.innerText = 'Continue';
-    btn.onclick = () => overlay.remove();
-    Object.assign(btn.style, {
-        marginTop: '15px',
-        padding: '8px 16px',
-        fontSize: '16px',
-        cursor: 'pointer',
-        background: '#444',
-        color: 'white',
-        border: 'none',
-        borderRadius: '6px'
-    });
-    box.appendChild(btn);
+		const countdownText = document.createElement('p');
+		countdownText.style.marginTop = '10px';
+		countdownText.style.fontSize = '18px';
+		box.appendChild(countdownText);
 
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-}
+		overlay.appendChild(box);
+		document.body.appendChild(overlay);
 
+		// Countdown
+		let countdown = 5;
+		countdownText.innerText = `Next round in ${countdown}...`;
+		const interval = setInterval(() => {
+		    countdown--;
+		    if (countdown > 0) {
+		        countdownText.innerText = `Next round in ${countdown}...`;
+		    } else {
+		        clearInterval(interval);
+		        overlay.remove();
+		    }
+		}, 1000);
+	}
+
+	//show round final end game results
+	showFinalResults(rankedPlayers) {
+		const overlay = document.createElement('div');
+		Object.assign(overlay.style, {
+		    position: 'fixed', top: '0', left: '0',
+		    width: '100%', height: '100%',
+		    background: 'rgba(0,0,0,0.85)',
+		    display: 'flex',
+		    alignItems: 'center',
+		    justifyContent: 'center',
+		    zIndex: 1000
+		});
+
+		const box = document.createElement('div');
+		Object.assign(box.style, {
+		    background: '#222',
+		    color: '#fff',
+		    padding: '20px',
+		    borderRadius: '10px',
+		    textAlign: 'center',
+		    minWidth: '300px'
+		});
+
+		const title = document.createElement('h2');
+		title.innerText = `Final Rankings`;
+		box.appendChild(title);
+
+		rankedPlayers.forEach(p => {
+		    const pDiv = document.createElement('p');
+		    const player = this.players.find(pl => pl.id === p.id);
+		    pDiv.innerText = `${p.place}. ${player.name} (${p.score} pts)`;
+		    box.appendChild(pDiv);
+		});
+
+		const exitBtn = document.createElement('button');
+		exitBtn.innerText = 'Exit to Game Selection';
+		Object.assign(exitBtn.style, {
+		    marginTop: '15px',
+		    padding: '8px 16px',
+		    fontSize: '16px',
+		    cursor: 'pointer',
+		    background: '#444',
+		    color: 'white',
+		    border: 'none',
+		    borderRadius: '6px'
+		});
+		exitBtn.onclick = () => {
+		    overlay.remove();
+		    // Go back to GameScene
+		    this.scene.stop('TypingGame');
+		    this.scene.start('GameScene', {
+		        players: this.players,
+		        myIndex: this.myIndex,
+		        socket: this.socket,
+		        leaderId: this.players[this.myIndex].id
+		    });
+		};
+		box.appendChild(exitBtn);
+
+		overlay.appendChild(box);
+		document.body.appendChild(overlay);
+	}
 
   create() {
     document.body.innerHTML = '';
@@ -137,15 +200,9 @@ export default class TypingGame extends Phaser.Scene {
 
 
     this.socket.on('gameEnded', ({ rankedPlayers }) => {
-      let msg = 'Game Over! Final Rankings:\n';
-      rankedPlayers.forEach(p => {
-        const player = this.players.find(pl => pl.id === p.id);
-        msg += `${p.place}. ${player.name} (${p.score} pts)\n`;
-      });
-      alert(msg);
-      //return to lobby/home
-      window.location.reload();
-    });
+	    this.showFinalResults(rankedPlayers);
+	});
+
 
     //initial UI update
     this.updateBlockStyles();

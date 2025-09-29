@@ -85,7 +85,7 @@ class TypingRace {
 
     this.round++;
     if (this.round <= this.maxRounds) {
-      setTimeout(() => this.startRound(), 3000); // 3 sec delay
+      setTimeout(() => this.startRound(), 5000); //3 sec delay
     } else {
       this.endGame();
     }
