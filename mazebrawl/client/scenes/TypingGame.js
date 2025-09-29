@@ -44,7 +44,7 @@ export default class TypingGame extends Phaser.Scene {
 		});
 
 		const title = document.createElement('h2');
-		title.innerText = `Round ${this.round - 1} Results`; // previous round
+		title.innerText = `Round ${this.round - 0} Results`;
 		box.appendChild(title);
 
 		const list = document.createElement('div');
