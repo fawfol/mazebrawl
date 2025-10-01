@@ -211,6 +211,8 @@ export default class GameScene extends Phaser.Scene {
 
   shutdown() {
     console.log('GameScene shutting down, removing listeners.');
+	if (this.domContainer) this.domContainer.remove();
+
     this.socket.off('preCountdown');
     this.socket.off('gameChatMessage');
     this.socket.off('roomUpdate');
