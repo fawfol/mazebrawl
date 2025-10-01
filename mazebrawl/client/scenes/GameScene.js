@@ -17,20 +17,20 @@ export default class GameScene extends Phaser.Scene {
 
     document.body.innerHTML = '';
 
-    // Delegate game start logic
-    this.socket.on('startGame', (gameType, sentence, extra) => {
-  console.log('startGame received:', gameType, sentence, extra);
-  
-  this.scene.stop('GameScene');
-  this.scene.start(gameType, { 
-      players: this.players,
-      myIndex: this.myIndex,
-      socket: this.socket,
-      sentence: sentence,
-      round: extra?.round,
-      maxRounds: extra?.maxRounds
-  });
-});
+    // Delegate game start logic to the new preCountdown event
+    this.socket.off('preCountdown'); // Prevent duplicate listeners
+    this.socket.on('preCountdown', ({ duration, gameType }) => {
+        this.statusText.innerText = 'Game starting...';
+        
+        // Immediately transition to the TypingGame scene
+        this.scene.stop('GameScene');
+        this.scene.start(gameType, {
+            players: this.players,
+            myIndex: this.myIndex,
+            socket: this.socket,
+            preCountdown: duration // Pass the countdown duration to the next scene
+        });
+    });
 
     this.domContainer = document.createElement('div');
     this.domContainer.className = 'game-container';
@@ -82,7 +82,8 @@ export default class GameScene extends Phaser.Scene {
     Object.assign(typingRaceBtn.style, { padding: '10px 20px', fontSize: '1.2rem', cursor: 'pointer' });
     typingRaceBtn.onclick = () => {
       this.statusText.innerText = 'Starting Typing Race...';
-      this.socket.emit('selectGame', 'TypingRace', (response) => {
+      // Correct the gameType to 'TypingGame'
+      this.socket.emit('selectGame', 'TypingGame', (response) => {
         if (!response.success) {
           this.statusText.innerText = response.message;
         }
@@ -90,6 +91,7 @@ export default class GameScene extends Phaser.Scene {
     };
     gameList.appendChild(typingRaceBtn);
 
+	
     // Add more game buttons here
     // const newGameBtn = document.createElement('button');
     // newGameBtn.innerText = 'Start New Game';
@@ -97,9 +99,11 @@ export default class GameScene extends Phaser.Scene {
     //   this.socket.emit('selectGame', 'NewGame', (response) => { ... });
     // };
     // gameList.appendChild(newGameBtn);
-
+		
     this.domContainer.appendChild(gameList);
   }
+
+
 
   renderChatBox() {
     // ... (rest of the renderChatBox and related methods are unchanged)

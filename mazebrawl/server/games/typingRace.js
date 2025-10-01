@@ -1,5 +1,4 @@
-//mazebrawl/server/games/typingRace.js
-
+// mazebrawl/server/games/typingRace.js
 
 const https = require('https');
 
@@ -80,6 +79,7 @@ class TypingRace {
     this.scores = {};   // total scores
     this.round = 1;
     this.maxRounds = 5;
+	this.roundTimer = null; // A timer to enforce the time limit
 
     players.forEach(p => {
       this.progress[p.id] = 0;
@@ -97,6 +97,10 @@ class TypingRace {
   async startRound() {
     let sentence = await this.fetchQuote() || this.getRandomDefaultSentence();
     this.sentence = sentence;
+    
+    // Calculate the time limit based on sentence length
+    const letterCount = sentence.replace(/\s/g, '').length;
+    const timeLimit = Math.ceil(letterCount * 1.2); // 1.2 is the 20% buffer
 
     // reset per-round state
     this.progress = {};
@@ -104,10 +108,16 @@ class TypingRace {
     this.players.forEach(p => this.progress[p.id] = 0);
 
     // broadcast to all players in room
-    this.io.to(this.roomId).emit('startGame', 'TypingGame', this.sentence, {
+    this.io.to(this.roomId).emit('startGame', 'TypingRace', this.sentence, {
       round: this.round,
-      maxRounds: this.maxRounds
+      maxRounds: this.maxRounds,
+	  timeLimit: timeLimit // send the time limit to the client
     });
+
+    // Start the server-side timer for this round
+    this.roundTimer = setTimeout(() => {
+        this.handleTimeOut();
+    }, timeLimit * 1000);
 
     // also emit initial progress for new/late joining players
     this.io.to(this.roomId).emit('updateProgress', { playerId: null, progress: this.progress });
@@ -129,12 +139,29 @@ class TypingRace {
         if (position === 1) points = 3;
         else if (position === 2) points = 2;
         else if (position === 3) points = 1;
+		else points = 0; // No points for 4th place and below
 
         this.scores[playerId] += points;
     }
 
-    if (this.finishOrder.length === this.players.length) this.endRound();
-}
+    if (this.finishOrder.length === this.players.length) {
+        clearTimeout(this.roundTimer); // Stop the timer if everyone finishes early
+        this.endRound();
+    }
+  }
+  
+  // NEW: Handle players who time out
+  handleTimeOut() {
+    console.log(`Round timed out in room ${this.roomId}`);
+    this.players.forEach(p => {
+        if (!this.finishOrder.includes(p.id)) {
+            // Player timed out, set their progress to 1 and add to finish order with 0 points
+            this.progress[p.id] = 1;
+            this.handlePlayerFinish(p.id);
+        }
+    });
+    this.endRound();
+  }
 
 
   endRound() {

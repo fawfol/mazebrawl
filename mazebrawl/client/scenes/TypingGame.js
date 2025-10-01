@@ -11,14 +11,38 @@ export default class TypingGame extends Phaser.Scene {
     this.sentence = data.sentence || 'The race is about to begin.';
     this.round = data.round || 1;
     this.maxRounds = data.maxRounds || 5;
+    this.timeLimit = data.timeLimit || 60; // default to 60 seconds if not provided
+    this.countdownTimer = null; // A timer variable to track the countdown
+    
+    // NEW: Check for a pre-countdown duration
+    this.preCountdownDuration = data.preCountdown || 0;
 
     this.words = this.sentence.split(' ');
     this.currentWordIndex = 0;
 
     this.playerChars = {}; // character DOM elements
     this.wordBlocks = [];
+    
+    // NEW: Bind event listener for game start
+    this.socket.off('startGame');
+    this.socket.on('startGame', (gameType, sentence, extra) => {
+        this.sentence = sentence;
+        this.round = extra.round;
+        this.maxRounds = extra.maxRounds;
+        this.timeLimit = extra.timeLimit;
+        this.startRound();
+    });
   }
-
+  
+  // NEW: A separate method to set up the game UI and logic
+  startRound() {
+    // Reset game state for the new round
+    this.words = this.sentence.split(' ');
+    this.currentWordIndex = 0;
+    
+    document.body.innerHTML = '';
+    this.createUI();
+  }
 
 	//round end modal
 	showRoundResults(scores) {
@@ -140,10 +164,53 @@ export default class TypingGame extends Phaser.Scene {
 		overlay.appendChild(box);
 		document.body.appendChild(overlay);
 	}
+	
+	create() {
+        if (this.preCountdownDuration > 0) {
+            this.showPreCountdown();
+        } else {
+            this.startRound();
+        }
+    }
 
-  create() {
+    showPreCountdown() {
+        document.body.innerHTML = '';
+        
+        const overlay = document.createElement('div');
+        Object.assign(overlay.style, {
+            position: 'fixed', top: '0', left: '0',
+            width: '100%', height: '100%',
+            background: 'rgba(0,0,0,0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: '1000'
+        });
+        document.body.appendChild(overlay);
+
+        const countdownText = document.createElement('h1');
+        countdownText.style.fontSize = '10rem';
+        countdownText.style.color = 'white';
+        countdownText.innerText = this.preCountdownDuration;
+        overlay.appendChild(countdownText);
+
+        let currentCount = this.preCountdownDuration;
+        const countdownInterval = setInterval(() => {
+            currentCount--;
+            if (currentCount >= 0) {
+                countdownText.innerText = currentCount === 0 ? 'GO!' : currentCount;
+            } else {
+                clearInterval(countdownInterval);
+                overlay.remove();
+                // The startGame event from the server will trigger the actual game start
+            }
+        }, 1000);
+    }
+  
+  createUI() {
+    // This method now contains the code to set up the game UI, previously in create()
     document.body.innerHTML = '';
-
+    
     //main container
     this.container = document.createElement('div');
     Object.assign(this.container.style, {
@@ -160,10 +227,37 @@ export default class TypingGame extends Phaser.Scene {
     });
     document.body.appendChild(this.container);
 
-    //round info
+    //round info and timer
+    this.header = document.createElement('div');
+    Object.assign(this.header.style, {
+        display: 'flex',
+        justifyContent: 'space-between',
+        width: '80%',
+        maxWidth: '1000px',
+        alignItems: 'center'
+    });
+
     this.roundText = document.createElement('h2');
     this.roundText.innerText = `Round ${this.round} / ${this.maxRounds}`;
-    this.container.appendChild(this.roundText);
+    this.header.appendChild(this.roundText);
+    
+    // NEW: Timer element
+    this.timerText = document.createElement('h2');
+    this.timerText.innerText = `Time: ${this.timeLimit}s`;
+    this.header.appendChild(this.timerText);
+
+    this.container.appendChild(this.header);
+    
+    // start the timer
+    let timeLeft = this.timeLimit;
+    this.countdownTimer = setInterval(() => {
+        timeLeft--;
+        if (timeLeft >= 0) {
+            this.timerText.innerText = `Time: ${timeLeft}s`;
+        } else {
+            clearInterval(this.countdownTimer);
+        }
+    }, 1000);
 
     //create race track
     this.createRaceTrack();
@@ -195,11 +289,13 @@ export default class TypingGame extends Phaser.Scene {
 
 	this.socket.off('roundEnded'); // prevent duplicate listeners
 	this.socket.on('roundEnded', ({ scores, finishOrder }) => {
+	  clearInterval(this.countdownTimer); // Stop the timer on round end
 	  this.showRoundResults(scores);
 	});
 
 
     this.socket.on('gameEnded', ({ rankedPlayers }) => {
+        clearInterval(this.countdownTimer); // Stop the timer on game end
 	    this.showFinalResults(rankedPlayers);
 	});
 
@@ -208,6 +304,17 @@ export default class TypingGame extends Phaser.Scene {
     this.updateBlockStyles();
     this.players.forEach(p => this.updateCharacterPosition(p.id, 0));
   }
+  
+  // NEW: Add a shutdown method to clean up listeners
+  shutdown() {
+    if (this.countdownTimer) {
+        clearInterval(this.countdownTimer);
+    }
+    this.socket.off('updateProgress');
+    this.socket.off('roundEnded');
+    this.socket.off('gameEnded');
+  }
+
 
   // --- UI Creation ---
 
@@ -241,7 +348,7 @@ export default class TypingGame extends Phaser.Scene {
     this.trackElement = track;
 
     // player characters
-    const emojis = ['🏃','🏇','🚴','🤸','🚶','🤾','💃'];
+    const emojis = ['馃弮','馃弴','馃毚','馃じ','馃毝','馃ぞ','馃拑'];
     this.players.forEach((p, idx) => {
       const char = document.createElement('div');
       char.className = 'player-char';

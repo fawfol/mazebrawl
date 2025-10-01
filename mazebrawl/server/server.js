@@ -4,7 +4,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
-const GameManager = require('./games/GameManager.js'); // Import the new GameManager
+const GameManager = require('./games/GameManager.js');
 
 const app = express();
 const server = http.createServer(app);
@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, '..', 'client')));
 
 // --- ROOM MANAGEMENT ---
 const rooms = new Map();
-const activeGames = new GameManager(io, rooms); // Instantiate GameManager
+const activeGames = new GameManager(io, rooms);
 
 function generateRoomID() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -118,20 +118,34 @@ io.on('connection', (socket) => {
 
   // --- GAME EVENTS (Delegated to GameManager) ---
   socket.on('selectGame', (gameType, callback) => {
-  let playerRoomId = null;
-  let playerRoom = null;
-  for (const [roomId, room] of rooms.entries()) {
-    if (room.players.some(p => p.id === socket.id)) {
-      playerRoomId = roomId;
-      playerRoom = room;
-      break;
+    let playerRoomId = null;
+    let playerRoom = null;
+    for (const [roomId, room] of rooms.entries()) {
+        if (room.players.some(p => p.id === socket.id)) {
+            playerRoomId = roomId;
+            playerRoom = room;
+            break;
+        }
     }
-  }
-  if (playerRoom && playerRoom.leaderId === socket.id) {
-    activeGames.startNewGame(playerRoomId, gameType, playerRoom.players, callback);
-  } else {
-    if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
-  }
+
+    if (playerRoom && playerRoom.leaderId === socket.id) {
+        if (gameType === 'TypingGame') {
+            const preCountdownDuration = 5; // 5 seconds
+            
+            // Emit the pre-game countdown event
+            io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType });
+            console.log(`Pre-countdown for TypingRace started in room ${playerRoomId}.`);
+
+            setTimeout(() => {
+                activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, callback);
+            }, preCountdownDuration * 1000);
+        } else {
+            // For other game types, start immediately
+            activeGames.startNewGame(playerRoomId, gameType, playerRoom.players, callback);
+        }
+    } else {
+        if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
+    }
 });
 
 

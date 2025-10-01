@@ -185,10 +185,55 @@ export default class LobbyScene extends Phaser.Scene {
     });
 
     this.socket.on('roomUpdate', (data) => this.updateRoom(data));
+	
+	// NEW: Add a listener for the pre-countdown event from the server
+	this.socket.on('startPreCountdown', (countdownValue) => {
+		this.hideLobbyUI();
 
-    // UPDATED: Listen for the new 'gameHasStarted' event
+		// Create a container for the countdown
+		this.countdownContainer = document.createElement('div');
+		Object.assign(this.countdownContainer.style, {
+			position: 'fixed',
+			top: '0',
+			left: '0',
+			width: '100%',
+			height: '100%',
+			background: 'rgba(0,0,0,0.8)',
+			display: 'flex',
+			justifyContent: 'center',
+			alignItems: 'center',
+			zIndex: '100'
+		});
+
+		// Create the countdown text element
+		this.countdownText = document.createElement('h1');
+		this.countdownText.style.fontSize = '10rem';
+		this.countdownText.style.color = 'white';
+		this.countdownText.innerText = countdownValue;
+		this.countdownContainer.appendChild(this.countdownText);
+
+		document.body.appendChild(this.countdownContainer);
+
+		let currentCount = countdownValue;
+		const countdownInterval = setInterval(() => {
+			currentCount--;
+			if (currentCount > 0) {
+				this.countdownText.innerText = currentCount;
+			} else {
+				this.countdownText.innerText = 'GO!';
+				clearInterval(countdownInterval);
+				// The scene transition will be handled by the gameHasStarted event
+			}
+		}, 1000);
+	});
+	
+	// UPDATED: Listen for the new 'gameHasStarted' event
     this.socket.on('gameHasStarted', () => {
 	  this.statusText.innerText = 'Game Started! Moving to game selection...';
+	  
+	  if (this.countdownContainer) {
+		this.countdownContainer.remove();
+	  }
 
 	  document.body.querySelectorAll('div').forEach(el => el.remove());
 	  this.children.removeAll(true);
@@ -289,6 +334,19 @@ export default class LobbyScene extends Phaser.Scene {
 
 	  this.updateRoom(data);
 	}
+	
+	// NEW: Helper function to hide the lobby UI
+	hideLobbyUI() {
+		this.formContainer.style.display = 'none';
+		this.leaveBtn.style.display = 'none';
+		this.readyBtn.style.display = 'none';
+		this.startBtn.style.display = 'none';
+		this.playerListDiv.style.display = 'none';
+		this.capacityText.style.display = 'none';
+		this.statusText.style.display = 'none';
+		this.activityLogDiv.style.display = 'none';
+	}
+
 
   toggleReady() {
     this.socket.emit('toggleReady');
