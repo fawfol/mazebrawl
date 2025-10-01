@@ -100,7 +100,7 @@ io.on('connection', (socket) => {
         const othersReady = room.players.filter(p => p.id !== socket.id).every(p => p.ready);
 
         if (room.players.length < minPlayers) {
-          if (callback) callback({ success: false, message: 'Not enough players (min 3)' });
+          if (callback) callback({ success: false, message: 'Not enough players (min 2)' });
           return;
         }
         if (!othersReady) {

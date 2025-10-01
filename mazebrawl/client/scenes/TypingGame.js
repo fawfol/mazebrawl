@@ -90,7 +90,7 @@ export default class TypingGame extends Phaser.Scene {
 
 		// Countdown
 		let countdown = 8;
-		countdownText.innerText = `Next round in ${countdown}...`;
+		countdownText.innerText = `Next round in ... ${countdown}`;
 		const interval = setInterval(() => {
 		    countdown--;
 		    if (countdown > 0) {
@@ -321,10 +321,6 @@ export default class TypingGame extends Phaser.Scene {
   createRaceTrack() {
     const track = document.createElement('div');
     track.className = 'race-track';
-    track.style.display = 'flex';
-    track.style.alignItems = 'flex-end';
-    track.style.gap = '5px';
-    track.style.marginBottom = '20px';
     
     const startBlock = document.createElement('div');
     startBlock.className = 'block start-finish';
@@ -348,13 +344,12 @@ export default class TypingGame extends Phaser.Scene {
     this.trackElement = track;
 
     // player characters
-    const emojis = ['馃弮','馃弴','馃毚','馃じ','馃毝','馃ぞ','馃拑'];
+    const emojis = ['🏎️', '🚗', '🚙', '🚕', '🚓', '🚑', '🚚'];
     this.players.forEach((p, idx) => {
       const char = document.createElement('div');
       char.className = 'player-char';
       char.innerText = emojis[idx % emojis.length];
       char.style.position = 'absolute';
-      char.style.bottom = '100px';
       char.style.transition = 'left 0.3s';
       track.appendChild(char);
       this.playerChars[p.id] = char;
@@ -445,9 +440,13 @@ export default class TypingGame extends Phaser.Scene {
 
   updateBlockStyles() {
     this.wordBlocks.forEach((block, index) => {
-      if (index < this.currentWordIndex) block.className = 'block completed';
-      else if (index === this.currentWordIndex) block.className = 'block current';
-      else block.className = 'block';
+      if (index < this.currentWordIndex) {
+        block.className = 'block completed';
+      } else if (index === this.currentWordIndex) {
+        block.className = 'block current';
+      } else {
+        block.className = 'block';
+      }
     });
   }
 
