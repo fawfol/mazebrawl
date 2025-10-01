@@ -1,6 +1,6 @@
 // mazebrawl/server/games/typingRace.js
 
-const defaultSentences = [
+const enSentences = [
   "Why did the chicken crossed the road",
   "The quick brown fox jumps over the lazy dog",
   "Never underestimate the power of a good book",
@@ -67,12 +67,17 @@ const defaultSentences = [
   "Every day is a new beginning so take a deep breath and start again",
   "Don't limit your challenges rather challenge your limits",
 ];
+const jaSentences = [
+  "速い茶色のキツネは怠惰な犬を飛び越えます",
+  "全ての道はローマに通ず",
+];
 
 class TypingRace {
-  constructor(io, roomId, players) {
+  constructor(io, roomId, players, lang= 'en') {
     this.io = io;
     this.roomId = roomId;
     this.players = players;
+    this.lang=lang;
     this.progress = {}; // { playerId: 0..1 }
     this.scores = {}; // total scores
     this.round = 1;
@@ -93,8 +98,11 @@ class TypingRace {
   }
 
   startRound() {
-    // Directly get a sentence from the local list
-    let sentence = this.getRandomDefaultSentence();
+    //directly get a sentence from the local list
+    let sentence = (this.lang === 'ja')
+      ? jaSentences[Math.floor(Math.random() * jaSentences.length)]
+      : enSentences[Math.floor(Math.random() * enSentences.length)];
+
     this.sentence = sentence;
 
     // Calculate the time limit based on sentence length

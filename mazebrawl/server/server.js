@@ -8,7 +8,12 @@ const GameManager = require('./games/GameManager.js');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "https://varybrawl.onrender.com",
+    methods: ["GET", "POST"]
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 
@@ -33,7 +38,8 @@ function broadcastRoomUpdate(roomId) {
   io.to(roomId).emit('roomUpdate', {
     leaderId: room.leaderId,
     players: room.players,
-    maxPlayers: 7
+    maxPlayers: 7,
+    language: room.language //broadcast current room language
   });
 }
 
@@ -42,7 +48,7 @@ io.on('connection', (socket) => {
   console.log(`New connection: ${socket.id}`);
 
   // --- ROOM EVENTS ---
-  socket.on('createRoom', (playerName, callback) => {
+  socket.on('createRoom', (playerName, lang, callback) => { //added lang parameter
     if (typeof callback !== 'function') return;
 
     let roomId;
@@ -50,16 +56,17 @@ io.on('connection', (socket) => {
 
     const room = {
       players: [{ id: socket.id, name: playerName, ready: false }],
-      leaderId: socket.id
+      leaderId: socket.id,
+      language: lang || 'en' //store language in room object
     };
     rooms.set(roomId, room);
 
     socket.join(roomId);
-    console.log(`Room created: ${roomId} by ${playerName}`);
+    console.log(`Room created: ${roomId} by ${playerName} with language ${lang}`);
     socket.emit('roomCreated', roomId);
     broadcastRoomUpdate(roomId);
 
-    callback({ success: true, roomId, leaderId: socket.id, players: room.players });
+    callback({ success: true, roomId, leaderId: socket.id, players: room.players, language: room.language });
   });
 
   socket.on('joinRoom', (roomId, playerName, callback) => {
@@ -77,6 +84,18 @@ io.on('connection', (socket) => {
 
     callback({ success: true, roomId, leaderId: room.leaderId, players: room.players });
     console.log(`${playerName} joined room ${roomId}`);
+  });
+
+  // ADDED: New listener for the leader changing the language
+  socket.on('changeLanguage', (newLang) => {
+    for (const [roomId, room] of rooms.entries()) {
+        if (room.leaderId === socket.id) {
+            room.language = newLang;
+            broadcastRoomUpdate(roomId); //notify all players of the language change
+            console.log(`Language in room ${roomId} changed to ${newLang}`);
+            break;
+        }
+    }
   });
 
   socket.on('toggleReady', () => {
@@ -129,26 +148,26 @@ io.on('connection', (socket) => {
     }
 
     if (playerRoom && playerRoom.leaderId === socket.id) {
+        const gameLang = playerRoom.language || 'en'; // CHANGED: Get language from room object
+        
         if (gameType === 'TypingGame') {
-            const preCountdownDuration = 10; // CHANGED: Increased from 5 to 10 seconds
+            const preCountdownDuration = 10;
             
-            // Emit the pre-game countdown event
             io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType });
             console.log(`Pre-countdown for TypingRace started in room ${playerRoomId}.`);
 
             setTimeout(() => {
-                activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, callback);
+                // CHANGED: Pass language to startNewGame
+                activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, gameLang, callback);
             }, preCountdownDuration * 1000);
         } else {
-            // For other game types, start immediately
-            activeGames.startNewGame(playerRoomId, gameType, playerRoom.players, callback);
+            activeGames.startNewGame(playerRoomId, gameType, playerRoom.players, gameLang, callback);
         }
     } else {
         if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
     }
 });
 	
-	//New event listener for the leader skipping the tutorial
   socket.on('leaderSkipTutorial', () => {
     let playerRoomId = null;
     let playerRoom = null;
@@ -165,7 +184,6 @@ io.on('connection', (socket) => {
         io.to(playerRoomId).emit('tutorialSkipped');
     }
   });
-
 
   socket.on('typingProgress', (progress) => {
     activeGames.handleGameEvent(socket.id, 'typingProgress', progress);
