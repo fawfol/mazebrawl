@@ -9,7 +9,9 @@ export default class GameScene extends Phaser.Scene {
     this.players = data.players || [];
     this.myIndex = data.myIndex ?? 0;
     this.socket = data.socket;
+    this.leaderId = data.leaderId;
     this.isLeader = this.players[this.myIndex]?.id === data.leaderId;
+    this.maxPlayers = 7; // Max players for the room
   }
 
   create() {
@@ -25,6 +27,7 @@ export default class GameScene extends Phaser.Scene {
         players: this.players,
         myIndex: this.myIndex,
         socket: this.socket,
+        leaderId: this.leaderId,
         preCountdown: duration,
       });
     });
@@ -46,6 +49,13 @@ export default class GameScene extends Phaser.Scene {
       : 'Waiting for the leader to choose a game...';
     mainContent.appendChild(this.statusText);
 
+    // Player Count
+    this.playerCountText = document.createElement('div');
+    this.playerCountText.style.fontSize = '1.2rem';
+    this.playerCountText.style.marginBottom = '20px';
+    mainContent.appendChild(this.playerCountText);
+    this.updatePlayerCount();
+
     if (this.isLeader) {
       this.renderGameSelectionUI(mainContent);
     }
@@ -57,6 +67,25 @@ export default class GameScene extends Phaser.Scene {
     this.socket.on('gameChatMessage', (data) => {
       this.addChatMessage(`${data.name}: ${data.text}`);
     });
+
+    //listen for room updates to change player count
+    this.socket.off('roomUpdate');
+    this.socket.on('roomUpdate', (data) => {
+        this.players = data.players;
+        this.leaderId = data.leaderId;
+        this.isLeader = this.socket.id === this.leaderId;
+        this.updatePlayerCount();
+    });
+
+    //listen for players leaving to update chat
+    this.socket.off('playerLeft');
+    this.socket.on('playerLeft', (playerName) => {
+        this.addChatMessage(`${playerName} has left the game.`, 'red');
+    });
+  }
+
+  updatePlayerCount() {
+    this.playerCountText.innerText = `Players: ${this.players.length}/${this.maxPlayers}`;
   }
 
   renderGameSelectionUI(container) {
@@ -128,9 +157,10 @@ export default class GameScene extends Phaser.Scene {
     this.chatInput.value = '';
   }
 
-  addChatMessage(msg) {
+  addChatMessage(msg, color = '#000') {
     const p = document.createElement('p');
     p.innerText = msg;
+    p.style.color = color;
     this.chatContainer.appendChild(p);
     this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
   }
@@ -139,5 +169,7 @@ export default class GameScene extends Phaser.Scene {
     console.log('GameScene shutting down, removing listeners.');
     this.socket.off('preCountdown');
     this.socket.off('gameChatMessage');
+    this.socket.off('roomUpdate');
+    this.socket.off('playerLeft');
   }
 }

@@ -15,6 +15,22 @@ body {
    Typing Race Game Styles
    ========================================= */
 
+.typing-game-header {
+  display: flex;
+  justify-content: space-between;
+  width: 90%;
+  max-width: 1000px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.header-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 10px;
+  white-space: nowrap;
+}
+
 .race-track {
   display: flex;
   align-items: center;
@@ -236,7 +252,11 @@ input[type='text']:focus {
   flex-shrink: 0;
 }
 
-/* --- Media Query for Larger Screens --- */
+/* =========================================
+   Media Queries for Responsiveness
+   ========================================= */
+
+/* --- Larger Mobile / Tablet Screens --- */
 @media (min-width: 768px) {
   .gamescene-status {
     font-size: 2.2rem;
@@ -248,22 +268,35 @@ input[type='text']:focus {
   }
 }
 
-/* --- NEW: Specific Fixes for Small Mobile Screens --- */
+/* --- Small Mobile Screens --- */
 @media (max-width: 480px) {
   .gamescene-selection button {
-    width: 100%; /* Ensure button takes full width of its container */
+    width: 100%;
     padding: 12px;
     font-size: 1rem;
   }
 
   .chat-container {
-    height: 100px; /* Reduce chat history height */
-    font-size: 12px; /* Make chat text smaller */
+    height: 100px;
+    font-size: 12px;
   }
 
   .chat-input-wrapper .chat-input {
-    padding: 8px; /* Reduce input box height */
+    padding: 8px;
     font-size: 0.9rem;
   }
-}
 
+  /* NEW styles for Typing Game Header */
+  .typing-game-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px 15px; /* vertical and horizontal gap */
+    width: 100%;
+  }
+
+  .header-text {
+    font-size: 1rem; /* Make font smaller on mobile */
+    margin: 0;
+  }
+}

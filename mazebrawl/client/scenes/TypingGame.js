@@ -8,11 +8,13 @@ export default class TypingGame extends Phaser.Scene {
     this.socket = data.socket;
     this.players = data.players;
     this.myIndex = data.myIndex;
+    this.leaderId = data.leaderId;
     this.sentence = data.sentence || 'The race is about to begin.';
     this.round = data.round || 1;
     this.maxRounds = data.maxRounds || 5;
     this.timeLimit = data.timeLimit || 60; // default to 60 seconds if not provided
     this.countdownTimer = null; // A timer variable to track the countdown
+    this.maxPlayers = 7;
     
     // NEW: Check for a pre-countdown duration
     this.preCountdownDuration = data.preCountdown || 0;
@@ -23,7 +25,7 @@ export default class TypingGame extends Phaser.Scene {
     this.playerChars = {}; // character DOM elements
     this.wordBlocks = [];
     
-    // NEW: Bind event listener for game start
+    // Bind event listener for game start
     this.socket.off('startGame');
     this.socket.on('startGame', (gameType, sentence, extra) => {
         this.sentence = sentence;
@@ -34,7 +36,7 @@ export default class TypingGame extends Phaser.Scene {
     });
   }
   
-  // NEW: A separate method to set up the game UI and logic
+  // A separate method to set up the game UI and logic
   startRound() {
     // Reset game state for the new round
     this.words = this.sentence.split(' ');
@@ -68,15 +70,17 @@ export default class TypingGame extends Phaser.Scene {
 		});
 
 		const title = document.createElement('h2');
-		title.innerText = `Round ${this.round - 0} Results`;
+		title.innerText = `Round ${this.round} Results`;
 		box.appendChild(title);
 
 		const list = document.createElement('div');
 		Object.entries(scores).forEach(([id, score]) => {
 		    const p = document.createElement('p');
 		    const player = this.players.find(pl => pl.id === id);
-		    p.innerText = `${player.name}: ${score}`;
-		    list.appendChild(p);
+            if (player) { // Check if player exists before showing score
+		        p.innerText = `${player.name}: ${score}`;
+		        list.appendChild(p);
+            }
 		});
 		box.appendChild(list);
 
@@ -132,8 +136,10 @@ export default class TypingGame extends Phaser.Scene {
 		rankedPlayers.forEach(p => {
 		    const pDiv = document.createElement('p');
 		    const player = this.players.find(pl => pl.id === p.id);
-		    pDiv.innerText = `${p.place}. ${player.name} (${p.score} pts)`;
-		    box.appendChild(pDiv);
+            if (player) { // Check if player exists
+		        pDiv.innerText = `${p.place}. ${player.name} (${p.score} pts)`;
+		        box.appendChild(pDiv);
+            }
 		});
 
 		const exitBtn = document.createElement('button');
@@ -154,9 +160,9 @@ export default class TypingGame extends Phaser.Scene {
 		    this.scene.stop('TypingGame');
 		    this.scene.start('GameScene', {
 		        players: this.players,
-		        myIndex: this.myIndex,
+		        myIndex: this.players.findIndex(p => p.id === this.socket.id),
 		        socket: this.socket,
-		        leaderId: this.players[this.myIndex].id
+		        leaderId: this.leaderId
 		    });
 		};
 		box.appendChild(exitBtn);
@@ -241,7 +247,11 @@ export default class TypingGame extends Phaser.Scene {
     this.roundText.innerText = `Round ${this.round} / ${this.maxRounds}`;
     this.header.appendChild(this.roundText);
     
-    // NEW: Timer element
+    // Player count element
+    this.playerCountText = document.createElement('h2');
+    this.header.appendChild(this.playerCountText);
+    
+    // Timer element
     this.timerText = document.createElement('h2');
     this.timerText.innerText = `Time: ${this.timeLimit}s`;
     this.header.appendChild(this.timerText);
@@ -283,6 +293,7 @@ export default class TypingGame extends Phaser.Scene {
 
     //event listeners
     this.input.addEventListener('keydown', this.handleInput.bind(this));
+    this.socket.off('updateProgress');
     this.socket.on('updateProgress', ({ playerId, progress }) => {
       this.updateCharacterPosition(playerId, progress);
     });
@@ -293,19 +304,42 @@ export default class TypingGame extends Phaser.Scene {
 	  this.showRoundResults(scores);
 	});
 
-
+    this.socket.off('gameEnded');
     this.socket.on('gameEnded', ({ rankedPlayers }) => {
         clearInterval(this.countdownTimer); // Stop the timer on game end
 	    this.showFinalResults(rankedPlayers);
 	});
 
+    this.socket.off('roomUpdate');
+    this.socket.on('roomUpdate', (data) => {
+        this.players = data.players;
+        this.leaderId = data.leaderId;
+        this.updatePlayerCount();
+        
+        // Hide UI elements of players who have left
+        Object.keys(this.playerChars).forEach(playerId => {
+            if (!this.players.some(p => p.id === playerId)) {
+                if (this.playerChars[playerId]) this.playerChars[playerId].style.display = 'none';
+                if (this.progressBars[playerId]) {
+                    this.progressBars[playerId].fill.parentElement.parentElement.style.display = 'none';
+                }
+            }
+        });
+    });
 
     //initial UI update
     this.updateBlockStyles();
     this.players.forEach(p => this.updateCharacterPosition(p.id, 0));
+    this.updatePlayerCount(); // Initial call
   }
   
-  // NEW: Add a shutdown method to clean up listeners
+  updatePlayerCount() {
+    if (this.playerCountText) {
+        this.playerCountText.innerText = `Players: ${this.players.length}/${this.maxPlayers}`;
+    }
+  }
+  
+  // Add a shutdown method to clean up listeners
   shutdown() {
     if (this.countdownTimer) {
         clearInterval(this.countdownTimer);
@@ -313,6 +347,7 @@ export default class TypingGame extends Phaser.Scene {
     this.socket.off('updateProgress');
     this.socket.off('roundEnded');
     this.socket.off('gameEnded');
+    this.socket.off('roomUpdate');
   }
 
 
@@ -358,11 +393,14 @@ export default class TypingGame extends Phaser.Scene {
 
   createProgressBars() {
     const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.gap = '8px';
-    container.style.width = '90%';
-    container.style.maxWidth = '1000px';
+    Object.assign(container.style, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        width: '90%',
+        maxWidth: '1000px',
+        marginTop: '10px' // Added for spacing
+    });
 
     this.progressBars = {};
 
@@ -459,8 +497,6 @@ export default class TypingGame extends Phaser.Scene {
       });
     }
   }
-
-  // mazebrawl/client/scenes/TypingGame.js
 
   updateCharacterPosition(playerId, progress) {
     const char = this.playerChars[playerId];
