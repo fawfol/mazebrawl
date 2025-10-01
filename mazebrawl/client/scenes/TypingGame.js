@@ -39,7 +39,7 @@ export default class TypingGame extends Phaser.Scene {
     // Reset game state for the new round
     this.words = this.sentence.split(' ');
     this.currentWordIndex = 0;
-    
+    this.wordBlocks = [];
     document.body.innerHTML = '';
     this.createUI();
   }
@@ -94,7 +94,7 @@ export default class TypingGame extends Phaser.Scene {
 		const interval = setInterval(() => {
 		    countdown--;
 		    if (countdown > 0) {
-		        countdownText.innerText = `Next round in ${countdown}...`;
+		        countdownText.innerText = `Next round in ... ${countdown}`;
 		    } else {
 		        clearInterval(interval);
 		        overlay.remove();
@@ -438,7 +438,7 @@ export default class TypingGame extends Phaser.Scene {
     }
   }
 
-  updateBlockStyles() {
+ updateBlockStyles() {
     this.wordBlocks.forEach((block, index) => {
       if (index < this.currentWordIndex) {
         block.className = 'block completed';
@@ -448,25 +448,46 @@ export default class TypingGame extends Phaser.Scene {
         block.className = 'block';
       }
     });
+
+    // ADD THIS BLOCK TO AUTOMATICALLY SCROLL
+    const currentBlock = this.wordBlocks[this.currentWordIndex];
+    if (currentBlock) {
+      currentBlock.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
   }
+
+  // mazebrawl/client/scenes/TypingGame.js
 
   updateCharacterPosition(playerId, progress) {
     const char = this.playerChars[playerId];
     const bar = this.progressBars[playerId];
     if (!char || !bar) return;
 
-    // progress bar
+    //progress bar update (this part is fine)
     const percent = (progress * 100).toFixed(0);
     bar.fill.style.width = `${percent}%`;
     bar.percentage.innerText = `${percent}%`;
 
-    // track position
-    const totalBlocks = this.words.length + 1;
-    const targetIndex = Math.floor(progress * totalBlocks);
+    // --- REVISED TRACK POSITION LOGIC ---
 
-    let targetEl = (progress >= 1) ? 
-      this.trackElement.querySelector('.block.start-finish:last-child') :
-      this.trackElement.children[targetIndex];
+    //select ONLY the blocks, ignoring the player cars.
+    const allBlocks = this.trackElement.querySelectorAll('.block');
+    if (allBlocks.length === 0) return; //failsafe if blocks aren't rendered
+
+    //calculate the target index based on progress.
+    const targetIndex = Math.floor(progress * this.words.length);
+
+    //determine the target element. We add 1 to the index to skip the "START" block.
+    //if progress is 100%, target the very last block (FINISH).
+    let targetEl = (progress >= 1)
+      ? allBlocks[allBlocks.length - 1]
+      : allBlocks[targetIndex + 1];
+
+    // --- END OF REVISED LOGIC ---
 
     if (targetEl) {
       const trackRect = this.trackElement.getBoundingClientRect();

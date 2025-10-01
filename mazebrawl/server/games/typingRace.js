@@ -139,23 +139,23 @@ class TypingRace {
         if (position === 1) points = 3;
         else if (position === 2) points = 2;
         else if (position === 3) points = 1;
-		else points = 0; // No points for 4th place and below
+		else points = 0; //o points for 4th place and below
 
         this.scores[playerId] += points;
     }
 
     if (this.finishOrder.length === this.players.length) {
-        clearTimeout(this.roundTimer); // Stop the timer if everyone finishes early
+        clearTimeout(this.roundTimer); //stop the timer if everyone finishes early
         this.endRound();
     }
   }
   
-  // NEW: Handle players who time out
+  //handle players who time out
   handleTimeOut() {
     console.log(`Round timed out in room ${this.roomId}`);
     this.players.forEach(p => {
         if (!this.finishOrder.includes(p.id)) {
-            // Player timed out, set their progress to 1 and add to finish order with 0 points
+            //player timed out, set their progress to 1 and add to finish order with 0 points
             this.progress[p.id] = 1;
             this.handlePlayerFinish(p.id);
         }

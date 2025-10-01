@@ -1,50 +1,162 @@
-  .race-track {
-    display: flex;
-    align-items: center;
-    width: 90%;
-    max-width: 1000px;
-    background-color: #333;
-    border-radius: 10px;
-    padding: 20px;
-    position: relative;
-    min-height: 80px;
+/* =========================================
+   Global & Body Styles
+   ========================================= */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  background-color: #111111;
+  color: #ffffff;
+  overflow-x: hidden; /* Prevent horizontal scroll on the body */
+}
+
+/* =========================================
+   Typing Race Game Styles
+   ========================================= */
+
+.race-track {
+  display: flex;
+  align-items: center;
+  width: 90%;
+  max-width: 1000px;
+  background-color: #333;
+  border-radius: 10px;
+  padding: 20px;
+  position: relative;
+  min-height: 80px;
+  /* CRITICAL: Make the track scrollable on small screens */
+  overflow-x: auto;
+  /* Hide the scrollbar for a cleaner look */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.race-track::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.block {
+  padding: 10px 15px;
+  margin: 0 5px;
+  border-radius: 5px;
+  background-color: #555;
+  color: #ccc;
+  font-family: 'Courier New', Courier, monospace;
+  white-space: nowrap; /* Keep words on one line */
+  font-size: 1.1rem; /* Use relative units for better scaling */
+  transition: all 0.2s ease-in-out;
+}
+
+.block.start-finish {
+  background-color: #4caf50;
+  font-weight: bold;
+  color: white;
+}
+
+.block.completed {
+  background-color: #3a5a3a;
+  color: #888;
+  transform: scale(0.9);
+}
+
+.block.current {
+  background-color: #008cba;
+  color: white;
+  box-shadow: 0 0 15px #00bfff;
+  transform: scale(1.15); /* Make the current word pop */
+}
+
+.player-char {
+  position: absolute;
+  bottom: 5px; /* Position at the bottom of the track */
+  font-size: 24px;
+  transition: left 0.3s ease-in-out;
+  transform: translateX(-50%) scaleX(-1); /* Center the emoji and flip it */
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.input-error {
+  border: 2px solid red !important;
+  animation: shake 0.2s;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
   }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* =========================================
+   General UI (Lobby, Buttons, Inputs)
+   ========================================= */
+button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  background-color: #4a4a4a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background-color: #6a6a6a;
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  background-color: #333;
+  color: #777;
+  cursor: not-allowed;
+}
+
+input[type='text'] {
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  border: 2px solid #555;
+  outline: none;
+  background-color: #222;
+  color: #fff;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type='text']:focus {
+  border-color: #00bfff;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+}
+
+/* =========================================
+   Media Queries for Responsiveness
+   ========================================= */
+
+/* For smaller phones */
+@media (max-width: 480px) {
   .block {
-    padding: 10px;
-    margin: 0 5px;
-    border-radius: 5px;
-    background-color: #555;
-    color: #ccc;
-    font-family: 'Courier New', Courier, monospace;
-    white-space: nowrap;
+    font-size: 1rem;
+    padding: 8px 12px;
   }
-  .block.start-finish {
-    background-color: #4CAF50;
-    font-weight: bold;
-    color: white;
+
+  button,
+  input[type='text'] {
+    font-size: 0.9rem;
+    width: 80%; /* Make inputs and buttons take more width */
   }
-  .block.completed {
-    background-color: #3a5a3a;
-    color: #888;
+}
+
+/* For tablets and larger screens */
+@media (min-width: 768px) {
+  .block {
+    font-size: 1.25rem; /* Increase font size on bigger screens */
   }
-  .block.current {
-    background-color: #008CBA;
-    color: white;
-    box-shadow: 0 0 10px #00BFFF;
-  }
-  .player-char {
-    position: absolute;
-    bottom: 5px; /* Position at the bottom of the track */
-    font-size: 24px;
-    transition: left 0.3s ease-in-out;
-    transform: translateX(-50%); /* Center the emoji */
-  }
-  .input-error {
-    border: 2px solid red !important;
-    animation: shake 0.2s;
-  }
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
-  }
+}
