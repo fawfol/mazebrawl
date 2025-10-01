@@ -35,6 +35,8 @@ export default class GameScene extends Phaser.Scene {
     // --- Create the main layout containers ---
     this.domContainer = document.createElement('div');
     this.domContainer.className = 'gamescene-container';
+    // CHANGED: Justify content to 'center' to bring elements to the middle
+    this.domContainer.style.justifyContent = 'center'; 
     document.body.appendChild(this.domContainer);
 
     const mainContent = document.createElement('div');
@@ -60,7 +62,11 @@ export default class GameScene extends Phaser.Scene {
       this.renderGameSelectionUI(mainContent);
     }
 
-    this.renderChatBox(); // This will now append to the main container
+    // CHANGED: Pass mainContent to renderChatBox to group it with other central elements
+    this.renderChatBox(mainContent); 
+
+    // ADDED: Create and render the "Back to Lobby" button
+    this.renderBackButton();
 
     // Listen for incoming chat messages
     this.socket.off('gameChatMessage');
@@ -113,14 +119,18 @@ export default class GameScene extends Phaser.Scene {
 
     container.appendChild(gameList);
   }
-
-  renderChatBox() {
+  
+  // CHANGED: Method signature and where chatWrapper is appended
+  renderChatBox(container) {
     const chatWrapper = document.createElement('div');
     chatWrapper.className = 'gamescene-chat-wrapper';
+    chatWrapper.style.marginTop = '20px'; // Add some space above the chat box
 
     // Chat messages container
     this.chatContainer = document.createElement('div');
     this.chatContainer.className = 'chat-container';
+    // CHANGED: Increased the height of the chat box
+    this.chatContainer.style.height = '200px'; 
     chatWrapper.appendChild(this.chatContainer);
 
     // Wrapper for the input and button
@@ -143,11 +153,45 @@ export default class GameScene extends Phaser.Scene {
     inputWrapper.appendChild(this.chatInput);
     inputWrapper.appendChild(sendBtn);
     chatWrapper.appendChild(inputWrapper);
-    this.domContainer.appendChild(chatWrapper);
+    
+    // CHANGED: Append to the provided container to keep it in the middle
+    container.appendChild(chatWrapper); 
 
     this.chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.sendChatMessage();
     });
+  }
+
+  // ADDED: New function to create and handle the back button
+  renderBackButton() {
+    const footer = document.createElement('div');
+    Object.assign(footer.style, {
+        position: 'absolute',
+        bottom: '20px',
+        width: '100%',
+        textAlign: 'center'
+    });
+
+    const backBtn = document.createElement('button');
+    backBtn.innerText = 'Back to Lobby';
+    backBtn.onclick = () => {
+        backBtn.disabled = true;
+        backBtn.innerText = 'Leaving...';
+
+        this.socket.emit('leaveRoom', (response) => {
+            if (response.success) {
+                this.scene.stop('GameScene');
+                this.scene.start('LobbyScene');
+            } else {
+                // If leaving fails, re-enable the button
+                backBtn.disabled = false;
+                backBtn.innerText = 'Back to Lobby';
+            }
+        });
+    };
+
+    footer.appendChild(backBtn);
+    this.domContainer.appendChild(footer);
   }
 
   sendChatMessage() {
