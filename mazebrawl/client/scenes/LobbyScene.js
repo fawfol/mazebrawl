@@ -20,22 +20,22 @@ export default class LobbyScene extends Phaser.Scene {
 
     this.socket = io(this.game.SERVER_URL);
     
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.top = 0;
-    container.style.left = 0;
-    container.style.width = '100%';
-    container.style.height = '100%';
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
-    container.style.paddingTop = '70px';
-    container.style.color = 'white';
-    container.style.fontFamily = 'Arial, sans-serif';
-    container.style.textAlign = 'center';
-    container.style.gap = '15px';
-    document.body.appendChild(container);
+   	this.container = document.createElement('div');
+	this.container.style.position = 'absolute';
+    this.container.style.top = '0';
+    this.container.style.left = '0';
+    this.container.style.width = '100%';
+    this.container.style.height = '100%';
+    this.container.style.display = 'flex';
+    this.container.style.flexDirection = 'column';
+    this.container.style.alignItems = 'center';
+    this.container.style.justifyContent = 'center';
+    this.container.style.paddingTop = '70px';
+    this.container.style.color = 'white';
+    this.container.style.fontFamily = 'Arial, sans-serif';
+    this.container.style.textAlign = 'center';
+    this.container.style.gap = '15px';
+    document.body.appendChild(this.container);
 
     // form container
     this.formContainer = document.createElement('div');
@@ -43,7 +43,7 @@ export default class LobbyScene extends Phaser.Scene {
     this.formContainer.style.flexDirection = 'column';
     this.formContainer.style.alignItems = 'center';
     this.formContainer.style.gap = '12px';
-    container.appendChild(this.formContainer);
+    this.container.appendChild(this.formContainer);
 
     // name input
     this.nameInput = document.createElement('input');
@@ -89,17 +89,17 @@ export default class LobbyScene extends Phaser.Scene {
     this.capacityText = document.createElement('div');
     this.capacityText.style.marginTop = '10px';
     this.capacityText.style.fontSize = '16px';
-    container.appendChild(this.capacityText);
+    this.container.appendChild(this.capacityText);
 
     // status text
     this.statusText = document.createElement('div');
     this.statusText.style.marginTop = '25px';
-    container.appendChild(this.statusText);
+    this.container.appendChild(this.statusText);
 
     // player list
     this.playerListDiv = document.createElement('div');
     this.playerListDiv.style.marginTop = '20px';
-    container.appendChild(this.playerListDiv);
+    this.container.appendChild(this.playerListDiv);
 
     // ready and start buttons
     this.readyBtn = document.createElement('button');
@@ -108,14 +108,14 @@ export default class LobbyScene extends Phaser.Scene {
     this.readyBtn.style.height = '40px';
     this.readyBtn.style.fontSize = '20px';
     this.readyBtn.style.display = 'none';
-    container.appendChild(this.readyBtn);
+    this.container.appendChild(this.readyBtn);
     this.startBtn = document.createElement('button');
     this.startBtn.innerText = 'START GAME';
     this.startBtn.style.marginTop = '10px';
     this.startBtn.style.height = '40px';
     this.startBtn.style.fontSize = '20px';
     this.startBtn.style.display = 'none';
-    container.appendChild(this.startBtn);
+    this.container.appendChild(this.startBtn);
 
     // activity logs
     this.activityLogDiv = document.createElement('div');
@@ -123,7 +123,7 @@ export default class LobbyScene extends Phaser.Scene {
     this.activityLogDiv.style.fontSize = '14px';
     this.activityLogDiv.style.textAlign = 'left';
     this.activityLogDiv.style.maxWidth = '300px';
-    container.appendChild(this.activityLogDiv);
+    this.container.appendChild(this.activityLogDiv);
     this.activityLogDiv.style.height = '100px';
     this.activityLogDiv.style.overflowY = 'auto';
     this.activityLogDiv.style.background = 'rgba(0,0,0,0.3)';
@@ -139,7 +139,7 @@ export default class LobbyScene extends Phaser.Scene {
 	this.leaveBtn.style.height = '40px';
 	this.leaveBtn.style.fontSize = '20px';
 	this.leaveBtn.style.display = 'none'; // hidden until inside a room
-	container.appendChild(this.leaveBtn);
+	this.container.appendChild(this.leaveBtn);
 
 	this.leaveBtn.onclick = () => this.leaveRoom();
 
@@ -403,7 +403,10 @@ export default class LobbyScene extends Phaser.Scene {
 }
 
   shutdown() {
-    console.log('LobbyScene shutting down, removing listeners.');
+	console.log('LobbyScene shutting down, removing listeners and DOM elements.');
+
+  if (this.container) this.container.remove();
+
     this.socket.off('gameHasStarted'); // UPDATED
     this.socket.off('roomUpdate');
     this.socket.off('roomCreated');
