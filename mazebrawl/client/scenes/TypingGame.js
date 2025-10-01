@@ -65,7 +65,7 @@ export default class TypingGame extends Phaser.Scene {
 		document.body.appendChild(overlay);
 
 		// Countdown
-		let countdown = 5;
+		let countdown = 8;
 		countdownText.innerText = `Next round in ${countdown}...`;
 		const interval = setInterval(() => {
 		    countdown--;
