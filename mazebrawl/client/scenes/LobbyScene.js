@@ -5,11 +5,20 @@ export default class LobbyScene extends Phaser.Scene {
     super({ key: 'LobbyScene' });
   }
 
-  create() {
-	
-	const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 200, 'VARY BRAWL LOBBY', { fontSize: '48px', fill: '#ffffff', fontFamily: 'Arial' }); title.setOrigin(0.5);	
-	
-     this.socket = io(this.game.SERVER_URL);
+   create() {
+    const isMobile = this.scale.width < 768;
+    const titleFontSize = isMobile ? '32px' : '48px';
+    const topMargin = 40; //approx 2.5rem (2.5 * 16px)
+
+    const title = this.add.text(
+      this.scale.width / 2,
+      topMargin,
+      'VARY BRAWL',
+      { fontSize: titleFontSize, fill: '#ffffff', fontFamily: 'Arial', align: 'center' }
+    );
+    title.setOrigin(0.5, 0); // Center horizontally, align to the top vertically
+
+    this.socket = io(this.game.SERVER_URL);
     
     const container = document.createElement('div');
     container.style.position = 'absolute';
@@ -65,11 +74,7 @@ export default class LobbyScene extends Phaser.Scene {
 
     // buttons
     const btnWrapper = document.createElement('div');
-    btnWrapper.style.display = 'flex';
-    btnWrapper.style.gap = '5px';
-    btnWrapper.style.marignTop = '10px';
-    btnWrapper.style.height = '40px';
-    btnWrapper.style.fontSize = '25px';
+    btnWrapper.className = 'lobby-buttons-wrapper';
     this.formContainer.appendChild(btnWrapper);
 
     this.createBtn = document.createElement('button');

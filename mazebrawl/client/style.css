@@ -25,14 +25,12 @@ body {
   padding: 20px;
   position: relative;
   min-height: 80px;
-  /* CRITICAL: Make the track scrollable on small screens */
   overflow-x: auto;
-  /* Hide the scrollbar for a cleaner look */
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .race-track::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 .block {
@@ -42,8 +40,8 @@ body {
   background-color: #555;
   color: #ccc;
   font-family: 'Courier New', Courier, monospace;
-  white-space: nowrap; /* Keep words on one line */
-  font-size: 1.1rem; /* Use relative units for better scaling */
+  white-space: nowrap;
+  font-size: 1.1rem;
   transition: all 0.2s ease-in-out;
 }
 
@@ -63,15 +61,15 @@ body {
   background-color: #008cba;
   color: white;
   box-shadow: 0 0 15px #00bfff;
-  transform: scale(1.15); /* Make the current word pop */
+  transform: scale(1.15);
 }
 
 .player-char {
   position: absolute;
-  bottom: 5px; /* Position at the bottom of the track */
+  bottom: 5px;
   font-size: 24px;
   transition: left 0.3s ease-in-out;
-  transform: translateX(-50%) scaleX(-1); /* Center the emoji and flip it */
+  transform: translateX(-50%) scaleX(-1);
   text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
@@ -106,6 +104,9 @@ button {
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.2s;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
 }
 
 button:hover:not(:disabled) {
@@ -136,27 +137,133 @@ input[type='text']:focus {
   box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
 }
 
+.lobby-buttons-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+
 /* =========================================
-   Media Queries for Responsiveness
+   Game Scene Styles
    ========================================= */
 
-/* For smaller phones */
-@media (max-width: 480px) {
-  .block {
-    font-size: 1rem;
-    padding: 8px 12px;
-  }
-
-  button,
-  input[type='text'] {
-    font-size: 0.9rem;
-    width: 80%; /* Make inputs and buttons take more width */
-  }
+.gamescene-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 20px;
+  width: 100vw;
+  height: 100vh;
+  gap: 20px;
 }
 
-/* For tablets and larger screens */
+.gamescene-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.gamescene-status {
+  font-size: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  color: #00bfff;
+  text-shadow: 0 0 8px rgba(0, 191, 255, 0.6);
+}
+
+.gamescene-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 90%;
+  max-width: 400px;
+}
+
+.gamescene-chat-wrapper {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%; /* Changed from 90% to fill wrapper */
+  height: 130px;
+  background: #fff;
+  color: #000;
+  padding: 10px;
+  overflow-y: auto;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-top: 10px;
+  box-sizing: border-box;
+}
+
+.chat-container p {
+  margin: 2px 0;
+  word-break: break-word;
+}
+
+.chat-input-wrapper {
+  display: flex;
+  gap: 5px;
+  width: 100%; /* Changed from 90% to fill wrapper */
+  margin-top: 5px;
+  box-sizing: border-box;
+}
+
+.chat-input-wrapper .chat-input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.chat-input-wrapper .chat-send-btn {
+  width: auto;
+  flex-shrink: 0;
+}
+
+/* --- Media Query for Larger Screens --- */
 @media (min-width: 768px) {
-  .block {
-    font-size: 1.25rem; /* Increase font size on bigger screens */
+  .gamescene-status {
+    font-size: 2.2rem;
+  }
+
+  .gamescene-selection {
+    flex-direction: row;
+    justify-content: center;
   }
 }
+
+/* --- NEW: Specific Fixes for Small Mobile Screens --- */
+@media (max-width: 480px) {
+  .gamescene-selection button {
+    width: 100%; /* Ensure button takes full width of its container */
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  .chat-container {
+    height: 100px; /* Reduce chat history height */
+    font-size: 12px; /* Make chat text smaller */
+  }
+
+  .chat-input-wrapper .chat-input {
+    padding: 8px; /* Reduce input box height */
+    font-size: 0.9rem;
+  }
+}
+

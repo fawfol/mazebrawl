@@ -1,7 +1,5 @@
 // mazebrawl/server/games/typingRace.js
 
-const https = require('https');
-
 const defaultSentences = [
   "Why did the chicken crossed the road",
   "The quick brown fox jumps over the lazy dog",
@@ -55,7 +53,7 @@ const defaultSentences = [
   "The way to get started is to quit talking and begin doing",
   "Life is 10% what happens to us and 90% how we react to it",
   "Do what you love, and you’ll never work a day in your life",
- "Time you enjoy wasting is not wasted time",
+  "Time you enjoy wasting is not wasted time",
   "Do not let what you cannot do interfere with what you can do",
   "Hustle in silence and let your success make the noise",
   "Opportunities are usually disguised as hard work",
@@ -67,7 +65,7 @@ const defaultSentences = [
   "Strive for progress, not perfection",
   "Motivation is what gets you started, habit is what keeps you going",
   "Every day is a new beginning, take a deep breath and start again",
-  "Don't limit your challenges, challenge your limits"
+  "Don't limit your challenges, challenge your limits",
 ];
 
 class TypingRace {
@@ -76,12 +74,12 @@ class TypingRace {
     this.roomId = roomId;
     this.players = players;
     this.progress = {}; // { playerId: 0..1 }
-    this.scores = {};   // total scores
+    this.scores = {}; // total scores
     this.round = 1;
     this.maxRounds = 5;
-	this.roundTimer = null; // A timer to enforce the time limit
+    this.roundTimer = null; // A timer to enforce the time limit
 
-    players.forEach(p => {
+    players.forEach((p) => {
       this.progress[p.id] = 0;
       this.scores[p.id] = 0;
     });
@@ -94,10 +92,11 @@ class TypingRace {
     // can add additional per-game listeners here if needed
   }
 
-  async startRound() {
-    let sentence = await this.fetchQuote() || this.getRandomDefaultSentence();
+  startRound() {
+    // Directly get a sentence from the local list
+    let sentence = this.getRandomDefaultSentence();
     this.sentence = sentence;
-    
+
     // Calculate the time limit based on sentence length
     const letterCount = sentence.replace(/\s/g, '').length;
     const timeLimit = Math.ceil(letterCount * 1.2); // 1.2 is the 20% buffer
@@ -105,22 +104,24 @@ class TypingRace {
     // reset per-round state
     this.progress = {};
     this.finishOrder = [];
-    this.players.forEach(p => this.progress[p.id] = 0);
+    this.players.forEach((p) => (this.progress[p.id] = 0));
 
     // broadcast to all players in room
     this.io.to(this.roomId).emit('startGame', 'TypingRace', this.sentence, {
       round: this.round,
       maxRounds: this.maxRounds,
-	  timeLimit: timeLimit // send the time limit to the client
+      timeLimit: timeLimit, // send the time limit to the client
     });
 
     // Start the server-side timer for this round
     this.roundTimer = setTimeout(() => {
-        this.handleTimeOut();
+      this.handleTimeOut();
     }, timeLimit * 1000);
 
     // also emit initial progress for new/late joining players
-    this.io.to(this.roomId).emit('updateProgress', { playerId: null, progress: this.progress });
+    this.io
+      .to(this.roomId)
+      .emit('updateProgress', { playerId: null, progress: this.progress });
   }
 
   updateProgress(playerId, prog) {
@@ -132,42 +133,41 @@ class TypingRace {
 
   handlePlayerFinish(playerId) {
     if (!this.finishOrder.includes(playerId)) {
-        this.finishOrder.push(playerId);
+      this.finishOrder.push(playerId);
 
-        const position = this.finishOrder.length;
-        let points = 0;
-        if (position === 1) points = 3;
-        else if (position === 2) points = 2;
-        else if (position === 3) points = 1;
-		else points = 0; //o points for 4th place and below
+      const position = this.finishOrder.length;
+      let points = 0;
+      if (position === 1) points = 3;
+      else if (position === 2) points = 2;
+      else if (position === 3) points = 1;
+      else points = 0; // No points for 4th place and below
 
-        this.scores[playerId] += points;
+      this.scores[playerId] += points;
     }
 
     if (this.finishOrder.length === this.players.length) {
-        clearTimeout(this.roundTimer); //stop the timer if everyone finishes early
-        this.endRound();
+      clearTimeout(this.roundTimer); // Stop the timer if everyone finishes early
+      this.endRound();
     }
   }
-  
-  //handle players who time out
+
+  // Handle players who time out
   handleTimeOut() {
     console.log(`Round timed out in room ${this.roomId}`);
-    this.players.forEach(p => {
-        if (!this.finishOrder.includes(p.id)) {
-            //player timed out, set their progress to 1 and add to finish order with 0 points
-            this.progress[p.id] = 1;
-            this.handlePlayerFinish(p.id);
-        }
+    this.players.forEach((p) => {
+      if (!this.finishOrder.includes(p.id)) {
+        // Player timed out, set their progress to 1 and add to finish order with 0 points
+        this.progress[p.id] = 1;
+        this.handlePlayerFinish(p.id);
+      }
     });
     this.endRound();
   }
 
-
   endRound() {
     this.io.to(this.roomId).emit('roundEnded', {
       scores: this.scores,
-      finishOrder: this.finishOrder
+      finishOrder: this.finishOrder,
     });
 
     this.round++;
@@ -189,24 +189,9 @@ class TypingRace {
   }
 
   getRandomDefaultSentence() {
-    return defaultSentences[Math.floor(Math.random() * defaultSentences.length)];
-  }
-
-  async fetchQuote() {
-    return new Promise((resolve) => {
-      https.get('https://api.quotable.io/random', res => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          try {
-            const quote = JSON.parse(data).content;
-            resolve(quote);
-          } catch {
-            resolve(null);
-          }
-        });
-      }).on('error', () => resolve(null));
-    });
+    return defaultSentences[
+      Math.floor(Math.random() * defaultSentences.length)
+    ];
   }
 }
 
