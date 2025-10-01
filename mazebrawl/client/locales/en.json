@@ -1,0 +1,13 @@
+{
+  "varyBrawlTitle": "V BRAWL",
+  "enterYourName": "ENTER YOUR NAME",
+  "enterRoomId": "Enter Room ID (5 chars)",
+  "createRoomButton": "CREATE ROOM",
+  "joinRoomButton": "JOIN ROOM",
+  "leaveRoomButton": "LEAVE ROOM",
+  "readyButton": "READY",
+  "notReadyButton": "NOT READY",
+  "startGameButton": "START GAME",
+  "chooseAGame": "Choose a Game",
+  "waitingForLeader": "Waiting for the leader to choose a game..."
+}

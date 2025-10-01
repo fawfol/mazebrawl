@@ -3,6 +3,7 @@
 import LobbyScene from './scenes/LobbyScene.js';
 import GameScene from './scenes/GameScene.js';
 import TypingGame from './scenes/TypingGame.js';
+import LanguageManager from './LanguageManager.js';
 
 //determine server URL dynamically
 const SERVER_URL = window.location.hostname === 'localhost'

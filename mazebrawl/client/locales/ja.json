@@ -1,0 +1,13 @@
+{
+  "varyBrawlTitle": "V BRAWL",
+  "enterYourName": "名前を入力してください",
+  "enterRoomId": "ルームIDを入力 (5文字)",
+  "createRoomButton": "ルームを作成",
+  "joinRoomButton": "ルームに参加",
+  "leaveRoomButton": "ルームを退出",
+  "readyButton": "準備完了",
+  "notReadyButton": "準備中",
+  "startGameButton": "ゲーム開始",
+  "chooseAGame": "ゲームを選択してください",
+  "waitingForLeader": "リーダーがゲームを選択するのを待っています..."
+}

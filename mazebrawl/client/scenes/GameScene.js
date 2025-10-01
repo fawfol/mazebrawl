@@ -1,4 +1,5 @@
 // mazebrawl/client/scenes/GameScene.js
+import LanguageManager from '../LanguageManager.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -11,15 +12,19 @@ export default class GameScene extends Phaser.Scene {
     this.socket = data.socket;
     this.leaderId = data.leaderId;
     this.isLeader = this.players[this.myIndex]?.id === data.leaderId;
-    this.maxPlayers = 7; // Max players for the room
+    this.maxPlayers = 7;
+    this.language = data.language || 'en'; // ADDED: Receive language from Lobby
   }
 
-  create() {
+  async create() { // CHANGED: Made async
     console.log('GameScene started');
     document.body.innerHTML = '';
 
-    // Listen for the pre-countdown event from the server
-    this.socket.off('preCountdown'); // Prevent duplicate listeners
+    // ADDED: Instantiate and load language
+    this.languageManager = new LanguageManager(this);
+    await this.languageManager.loadLanguage(this.language);
+
+    this.socket.off('preCountdown');
     this.socket.on('preCountdown', ({ duration, gameType }) => {
       this.statusText.innerText = 'Game starting...';
       this.scene.stop('GameScene');
@@ -32,26 +37,46 @@ export default class GameScene extends Phaser.Scene {
       });
     });
 
-    // --- Create the main layout containers ---
     this.domContainer = document.createElement('div');
     this.domContainer.className = 'gamescene-container';
-    // CHANGED: Justify content to 'center' to bring elements to the middle
     this.domContainer.style.justifyContent = 'center'; 
     document.body.appendChild(this.domContainer);
+
+    // ADDED: Language Selector for leader
+    if (this.isLeader) {
+        const langContainer = document.createElement('div');
+        Object.assign(langContainer.style, {
+            position: 'absolute', top: '10px', right: '10px', color: 'white'
+        });
+        const langLabel = document.createElement('span');
+        langLabel.innerText = 'Language: ';
+        this.languageSelector = document.createElement('select');
+        ['en', 'ja'].forEach(lang => {
+            const option = document.createElement('option');
+            option.value = lang;
+            option.innerText = lang.toUpperCase();
+            this.languageSelector.appendChild(option);
+        });
+        this.languageSelector.value = this.languageManager.currentLang;
+        this.languageSelector.onchange = async () => {
+            const newLang = this.languageSelector.value;
+            await this.languageManager.loadLanguage(newLang);
+            this.updateUIText();
+            this.socket.emit('changeLanguage', newLang);
+        };
+        langContainer.appendChild(langLabel);
+        langContainer.appendChild(this.languageSelector);
+        this.domContainer.appendChild(langContainer);
+    }
 
     const mainContent = document.createElement('div');
     mainContent.className = 'gamescene-main';
     this.domContainer.appendChild(mainContent);
 
-    // --- Create the UI elements ---
     this.statusText = document.createElement('h1');
     this.statusText.className = 'gamescene-status';
-    this.statusText.innerText = this.isLeader
-      ? 'Choose a Game'
-      : 'Waiting for the leader to choose a game...';
     mainContent.appendChild(this.statusText);
 
-    // Player Count
     this.playerCountText = document.createElement('div');
     this.playerCountText.style.fontSize = '1.2rem';
     this.playerCountText.style.marginBottom = '20px';
@@ -62,32 +87,44 @@ export default class GameScene extends Phaser.Scene {
       this.renderGameSelectionUI(mainContent);
     }
 
-    // CHANGED: Pass mainContent to renderChatBox to group it with other central elements
     this.renderChatBox(mainContent); 
-
-    // ADDED: Create and render the "Back to Lobby" button
     this.renderBackButton();
 
-    // Listen for incoming chat messages
     this.socket.off('gameChatMessage');
     this.socket.on('gameChatMessage', (data) => {
       this.addChatMessage(`${data.name}: ${data.text}`);
     });
 
-    //listen for room updates to change player count
     this.socket.off('roomUpdate');
-    this.socket.on('roomUpdate', (data) => {
+    this.socket.on('roomUpdate', async (data) => { // CHANGED: Made async
+        // ADDED: Language synchronization
+        if (data.language && data.language !== this.languageManager.currentLang) {
+            await this.languageManager.loadLanguage(data.language);
+            if(this.languageSelector) this.languageSelector.value = data.language;
+            this.updateUIText();
+        }
+
         this.players = data.players;
         this.leaderId = data.leaderId;
         this.isLeader = this.socket.id === this.leaderId;
         this.updatePlayerCount();
+        this.updateUIText();
     });
 
-    //listen for players leaving to update chat
     this.socket.off('playerLeft');
     this.socket.on('playerLeft', (playerName) => {
         this.addChatMessage(`${playerName} has left the game.`, 'red');
     });
+    
+    // ADDED: Initial UI text update
+    this.updateUIText();
+  }
+
+  // ADDED: New method to update UI text based on language
+  updateUIText() {
+    this.statusText.innerText = this.isLeader
+      ? this.languageManager.get('chooseAGame')
+      : this.languageManager.get('waitingForLeader');
   }
 
   updatePlayerCount() {
@@ -98,7 +135,6 @@ export default class GameScene extends Phaser.Scene {
     const gameList = document.createElement('div');
     gameList.className = 'gamescene-selection';
 
-    // Typing Race Button
     const typingRaceBtn = document.createElement('button');
     typingRaceBtn.innerText = 'Start Typing Race';
     typingRaceBtn.onclick = () => {
@@ -111,7 +147,6 @@ export default class GameScene extends Phaser.Scene {
     };
     gameList.appendChild(typingRaceBtn);
 
-    // Placeholder for more games
     const soonBtn = document.createElement('button');
     soonBtn.innerText = 'More Games Soon...';
     soonBtn.disabled = true;
@@ -120,41 +155,33 @@ export default class GameScene extends Phaser.Scene {
     container.appendChild(gameList);
   }
   
-  // CHANGED: Method signature and where chatWrapper is appended
   renderChatBox(container) {
     const chatWrapper = document.createElement('div');
     chatWrapper.className = 'gamescene-chat-wrapper';
-    chatWrapper.style.marginTop = '20px'; // Add some space above the chat box
+    chatWrapper.style.marginTop = '20px';
 
-    // Chat messages container
     this.chatContainer = document.createElement('div');
     this.chatContainer.className = 'chat-container';
-    // CHANGED: Increased the height of the chat box
     this.chatContainer.style.height = '200px'; 
     chatWrapper.appendChild(this.chatContainer);
 
-    // Wrapper for the input and button
     const inputWrapper = document.createElement('div');
     inputWrapper.className = 'chat-input-wrapper';
 
-    // Chat text input
     this.chatInput = document.createElement('input');
     this.chatInput.type = 'text';
     this.chatInput.placeholder = 'Chat with others...';
     this.chatInput.className = 'chat-input';
 
-    // Send button
     const sendBtn = document.createElement('button');
     sendBtn.innerText = 'Send';
     sendBtn.className = 'chat-send-btn';
     sendBtn.onclick = () => this.sendChatMessage();
 
-    // Add elements to the DOM
     inputWrapper.appendChild(this.chatInput);
     inputWrapper.appendChild(sendBtn);
     chatWrapper.appendChild(inputWrapper);
     
-    // CHANGED: Append to the provided container to keep it in the middle
     container.appendChild(chatWrapper); 
 
     this.chatInput.addEventListener('keydown', (e) => {
@@ -162,7 +189,6 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  // ADDED: New function to create and handle the back button
   renderBackButton() {
     const footer = document.createElement('div');
     Object.assign(footer.style, {
@@ -183,7 +209,6 @@ export default class GameScene extends Phaser.Scene {
                 this.scene.stop('GameScene');
                 this.scene.start('LobbyScene');
             } else {
-                // If leaving fails, re-enable the button
                 backBtn.disabled = false;
                 backBtn.innerText = 'Back to Lobby';
             }

@@ -1,28 +1,20 @@
 // mazebrawl/client/scenes/LobbyScene.js
+import LanguageManager from '../LanguageManager.js';
 
 export default class LobbyScene extends Phaser.Scene {
   constructor() {
     super({ key: 'LobbyScene' });
   }
 
-   create() {
+   async create() {
 	document.body.innerHTML = '';
 
 
-    const isMobile = this.scale.width < 768;
-    const titleFontSize = isMobile ? '32px' : '48px';
-    const topMargin = 40; //approx 2.5rem (2.5 * 16px)
-
-    const title = this.add.text(
-      this.scale.width / 2,
-      topMargin,
-      'VARY BRAWL',
-      { fontSize: titleFontSize, fill: '#ffffff', fontFamily: 'Arial', align: 'center' }
-    );
-    title.setOrigin(0.5, 0); // Center horizontally, align to the top vertically
-
     this.socket = io(this.game.SERVER_URL);
+    this.languageManager = new LanguageManager(this);
     
+    const isMobile = this.scale.width < 768;
+
    	this.container = document.createElement('div');
 	this.container.style.position = 'absolute';
     this.container.style.top = '0';
@@ -33,12 +25,50 @@ export default class LobbyScene extends Phaser.Scene {
     this.container.style.flexDirection = 'column';
     this.container.style.alignItems = 'center';
     this.container.style.justifyContent = 'center';
-    this.container.style.paddingTop = '70px';
+    this.container.style.paddingTop = '20px';
     this.container.style.color = 'white';
     this.container.style.fontFamily = 'Arial, sans-serif';
     this.container.style.textAlign = 'center';
     this.container.style.gap = '15px';
     document.body.appendChild(this.container);
+    
+    // ADDED: Language Selector
+    this.langContainer = document.createElement('div');
+    Object.assign(this.langContainer.style, {
+        position: 'absolute', top: '10px', right: '10px'
+    });
+    const langLabel = document.createElement('span');
+    langLabel.innerText = 'Language: ';
+    this.languageSelector = document.createElement('select');
+    ['en', 'ja'].forEach(lang => {
+        const option = document.createElement('option');
+        option.value = lang;
+        option.innerText = lang.toUpperCase();
+        this.languageSelector.appendChild(option);
+    });
+    this.languageSelector.value = this.languageManager.currentLang;
+    this.languageSelector.onchange = async () => {
+        const newLang = this.languageSelector.value;
+        await this.languageManager.loadLanguage(newLang);
+        this.updateUIText();
+        // If we are a leader, notify the server
+        if (this.leaderId && this.socket.id === this.leaderId) {
+            this.socket.emit('changeLanguage', newLang);
+        }
+    };
+    this.langContainer.appendChild(langLabel);
+    this.langContainer.appendChild(this.languageSelector);
+    this.container.appendChild(this.langContainer);
+    
+    //title
+	this.title = document.createElement('h1');
+    Object.assign(this.title.style, {
+        color: '#ffffff',
+        fontFamily: 'Arial, sans-serif',
+        margin: '0 0 10px 0'
+    });
+    this.title.style.fontSize = isMobile ? '36px' : '48px';
+    this.container.appendChild(this.title);
 
     // form container
     this.formContainer = document.createElement('div');
@@ -50,7 +80,6 @@ export default class LobbyScene extends Phaser.Scene {
 
     // name input
     this.nameInput = document.createElement('input');
-    this.nameInput.placeholder = 'ENTER YOUR NAME';
     this.nameInput.style.textAlign = 'center';
     this.nameInput.style.padding = '8px';
     this.nameInput.style.borderRadius = '5px';
@@ -63,7 +92,6 @@ export default class LobbyScene extends Phaser.Scene {
 
     // room input
     this.roomInput = document.createElement('input');
-    this.roomInput.placeholder = 'Enter Room ID (5 chars)';
     this.roomInput.style.textAlign = 'center';
     this.roomInput.style.padding = '8px';
     this.roomInput.style.borderRadius = '5px';
@@ -81,11 +109,9 @@ export default class LobbyScene extends Phaser.Scene {
     this.formContainer.appendChild(btnWrapper);
 
     this.createBtn = document.createElement('button');
-    this.createBtn.innerText = 'CREATE ROOM';
     btnWrapper.appendChild(this.createBtn);
 
     this.joinBtn = document.createElement('button');
-    this.joinBtn.innerText = 'JOIN ROOM';
     btnWrapper.appendChild(this.joinBtn);
 
     // room capacity display
@@ -106,14 +132,13 @@ export default class LobbyScene extends Phaser.Scene {
 
     // ready and start buttons
     this.readyBtn = document.createElement('button');
-    this.readyBtn.innerText = 'READY';
     this.readyBtn.style.marginTop = '10px';
     this.readyBtn.style.height = '40px';
     this.readyBtn.style.fontSize = '20px';
     this.readyBtn.style.display = 'none';
     this.container.appendChild(this.readyBtn);
+
     this.startBtn = document.createElement('button');
-    this.startBtn.innerText = 'START GAME';
     this.startBtn.style.marginTop = '10px';
     this.startBtn.style.height = '40px';
     this.startBtn.style.fontSize = '20px';
@@ -137,34 +162,28 @@ export default class LobbyScene extends Phaser.Scene {
 
 	//leave room button
 	this.leaveBtn = document.createElement('button');
-	this.leaveBtn.innerText = 'LEAVE ROOM';
 	this.leaveBtn.style.marginTop = '10px';
 	this.leaveBtn.style.height = '40px';
 	this.leaveBtn.style.fontSize = '20px';
-	this.leaveBtn.style.display = 'none'; // hidden until inside a room
+	this.leaveBtn.style.display = 'none';
 	this.container.appendChild(this.leaveBtn);
 
 	this.leaveBtn.onclick = () => this.leaveRoom();
 
-    // helper method to log events
     this.logActivity = (message) => {
       const time = new Date().toLocaleTimeString();
       const entry = document.createElement('div');
       entry.innerText = `[${time}] ${message}`;
       this.activityLogDiv.appendChild(entry);
-
-      //keep only last 5 logs
       while (this.activityLogDiv.childNodes.length > 5) {
         this.activityLogDiv.removeChild(this.activityLogDiv.firstChild);
       }
     };
 
-    // event listeners
     this.createBtn.onclick = () => this.createRoom();
     this.joinBtn.onclick = () => this.joinRoom();
     this.readyBtn.onclick = () => this.toggleReady();
     
-    // UPDATED: Use the new 'lobbyStart' event
     this.startBtn.onclick = () => {
       this.socket.emit('lobbyStart', (response) => {
         if (!response.success) {
@@ -176,97 +195,50 @@ export default class LobbyScene extends Phaser.Scene {
     };
 
     //SOCKET EVENT HANDLERS
-    this.socket.on('roomCreated', (roomId) => {
-      this.logActivity(`Room created! ID: ${roomId}`);
-    });
-
-    this.socket.on('playerJoined', (name) => {
-      this.logActivity(`${name} joined the room`);
-    });
-
-    this.socket.on('playerLeft', (name) => {
-      this.logActivity(`${name} left the room`);
-    });
-
-    this.socket.on('leaderChanged', (newLeaderName) => {
-      this.logActivity(`Leader left — new leader is ${newLeaderName}`);
-    });
-
+    this.socket.on('roomCreated', (roomId) => this.logActivity(`Room created! ID: ${roomId}`));
+    this.socket.on('playerJoined', (name) => this.logActivity(`${name} joined the room`));
+    this.socket.on('playerLeft', (name) => this.logActivity(`${name} left the room`));
+    this.socket.on('leaderChanged', (newLeaderName) => this.logActivity(`Leader left — new leader is ${newLeaderName}`));
     this.socket.on('roomUpdate', (data) => this.updateRoom(data));
 	
-	// NEW: Add a listener for the pre-countdown event from the server
-	this.socket.on('startPreCountdown', (countdownValue) => {
-		this.hideLobbyUI();
-
-		// Create a container for the countdown
-		this.countdownContainer = document.createElement('div');
-		Object.assign(this.countdownContainer.style, {
-			position: 'fixed',
-			top: '0',
-			left: '0',
-			width: '100%',
-			height: '100%',
-			background: 'rgba(0,0,0,0.8)',
-			display: 'flex',
-			justifyContent: 'center',
-			alignItems: 'center',
-			zIndex: '100'
-		});
-
-		// Create the countdown text element
-		this.countdownText = document.createElement('h1');
-		this.countdownText.style.fontSize = '10rem';
-		this.countdownText.style.color = 'white';
-		this.countdownText.innerText = countdownValue;
-		this.countdownContainer.appendChild(this.countdownText);
-
-		document.body.appendChild(this.countdownContainer);
-
-		let currentCount = countdownValue;
-		const countdownInterval = setInterval(() => {
-			currentCount--;
-			if (currentCount > 0) {
-				this.countdownText.innerText = currentCount;
-			} else {
-				this.countdownText.innerText = 'GO!';
-				clearInterval(countdownInterval);
-				// The scene transition will be handled by the gameHasStarted event
-			}
-		}, 1000);
-	});
-	
-	// UPDATED: Listen for the new 'gameHasStarted' event
     this.socket.on('gameHasStarted', () => {
 	  this.statusText.innerText = 'Game Started! Moving to game selection...';
-	  
-	  if (this.countdownContainer) {
-		this.countdownContainer.remove();
-	  }
-
 	  document.body.querySelectorAll('div').forEach(el => el.remove());
 	  this.children.removeAll(true);
       
-      // Pass player data to the next scene
-	  const myPlayerIndex = this.players.findIndex(p => p.id === this.socket.id);
-
-	  this.scene.stop('LobbyScene');
+      this.scene.stop('LobbyScene');
 	  this.scene.start('GameScene', {
 		players: this.players,
-		myIndex: myPlayerIndex,
+		myIndex: this.players.findIndex(p => p.id === this.socket.id),
 		socket: this.socket,
-		leaderId: this.leaderId
+		leaderId: this.leaderId,
+        language: this.languageManager.currentLang // ADDED: Pass language
 	  });
 	});
 
+    await this.languageManager.loadLanguage(this.languageManager.currentLang);
+    this.updateUIText();
   }
-	//create room
+  
+  // ADDED: New method to update all UI text from translation files
+  updateUIText() {
+    this.title.innerText = this.languageManager.get('varyBrawlTitle');
+    this.nameInput.placeholder = this.languageManager.get('enterYourName');
+    this.roomInput.placeholder = this.languageManager.get('enterRoomId');
+    this.createBtn.innerText = this.languageManager.get('createRoomButton');
+    this.joinBtn.innerText = this.languageManager.get('joinRoomButton');
+    this.leaveBtn.innerText = this.languageManager.get('leaveRoomButton');
+    this.startBtn.innerText = this.languageManager.get('startGameButton');
+  }
+
   createRoom() {
     const playerName = this.nameInput.value.trim();
     if (!playerName) {
       alert('Please enter your name.');
       return;
     }
-    this.socket.emit('createRoom', playerName, (response) => {
+    // CHANGED: Send current language when creating a room
+    this.socket.emit('createRoom', playerName, this.languageManager.currentLang, (response) => {
       if (response.success) {
 		this.statusText.style.fontSize = '17px';
 		this.statusText.style.fontWeight = 'bold';
@@ -284,7 +256,6 @@ export default class LobbyScene extends Phaser.Scene {
     });
   }
 
-	//join room
   joinRoom() {
     const playerName = this.nameInput.value.trim();
     const roomId = this.roomInput.value.trim();
@@ -305,30 +276,32 @@ export default class LobbyScene extends Phaser.Scene {
       }
     });
   }
+
 	leaveRoom() {
-  this.socket.emit('leaveRoom', (response) => {
-    if (response.success) {
-      this.formContainer.style.display = 'flex';
-      this.readyBtn.style.display = 'none';
-      this.startBtn.style.display = 'none';
-      this.leaveBtn.style.display = 'none';
-      this.playerListDiv.innerHTML = '';
-      this.capacityText.innerText = '';
-      this.statusText.innerText = 'You left the room.';
-      this.logActivity('You left the room.');
-    } else {
-      alert(response.message || 'Error leaving room.');
+      this.socket.emit('leaveRoom', (response) => {
+        if (response.success) {
+          this.formContainer.style.display = 'flex';
+          this.readyBtn.style.display = 'none';
+          this.startBtn.style.display = 'none';
+          this.leaveBtn.style.display = 'none';
+          this.playerListDiv.innerHTML = '';
+          this.capacityText.innerText = '';
+          this.statusText.innerText = 'You left the room.';
+          this.logActivity('You left the room.');
+          this.langContainer.style.display = 'block'; // Show language selector again
+        } else {
+          alert(response.message || 'Error leaving room.');
+        }
+      });
     }
-  });
-}
 
 	showLobbyUI(data) {
 	  this.formContainer.style.display = 'none';
+      this.langContainer.style.display = 'none'; // Hide main language selector
 	  this.leaveBtn.style.display = 'inline-block';
 
 	  if (this.socket.id !== data.leaderId) {
 		this.readyBtn.style.display = 'inline-block';
-		this.readyBtn.innerText = 'READY';
 	  } else {
 		this.readyBtn.style.display = 'none';
 	  }
@@ -342,26 +315,23 @@ export default class LobbyScene extends Phaser.Scene {
 
 	  this.updateRoom(data);
 	}
-	
-	// NEW: Helper function to hide the lobby UI
-	hideLobbyUI() {
-		this.formContainer.style.display = 'none';
-		this.leaveBtn.style.display = 'none';
-		this.readyBtn.style.display = 'none';
-		this.startBtn.style.display = 'none';
-		this.playerListDiv.style.display = 'none';
-		this.capacityText.style.display = 'none';
-		this.statusText.style.display = 'none';
-		this.activityLogDiv.style.display = 'none';
-	}
-
 
   toggleReady() {
     this.socket.emit('toggleReady');
   }
 
-  updateRoom(data) {
-    // Store player data for passing to next scene
+  async updateRoom(data) {
+    // ADDED: Language synchronization logic
+    if (data.language && data.language !== this.languageManager.currentLang) {
+        console.log(`Room language is ${data.language}, switching...`);
+        await this.languageManager.loadLanguage(data.language);
+        this.languageSelector.value = data.language;
+        this.updateUIText();
+    }
+    // Only allow leader to change language
+    this.languageSelector.disabled = (this.socket.id !== data.leaderId && data.players.some(p => p.id === this.socket.id));
+
+
     this.players = data.players;
     this.leaderId = data.leaderId;
 
@@ -395,7 +365,10 @@ export default class LobbyScene extends Phaser.Scene {
 
     const currentPlayer = data.players.find(p => p.id === this.socket.id);
     if (currentPlayer && this.socket.id !== data.leaderId) {
-        this.readyBtn.innerText = currentPlayer.ready ? 'NOT READY' : 'READY';
+        // CHANGED: Use language manager for button text
+        this.readyBtn.innerText = currentPlayer.ready 
+            ? this.languageManager.get('notReadyButton') 
+            : this.languageManager.get('readyButton');
     }
 
     if (this.socket.id === data.leaderId) {
@@ -407,10 +380,8 @@ export default class LobbyScene extends Phaser.Scene {
 
   shutdown() {
 	console.log('LobbyScene shutting down, removing listeners and DOM elements.');
-
-  if (this.container) this.container.remove();
-
-    this.socket.off('gameHasStarted'); // UPDATED
+    if (this.container) this.container.remove();
+    this.socket.off('gameHasStarted');
     this.socket.off('roomUpdate');
     this.socket.off('roomCreated');
     this.socket.off('playerJoined');
