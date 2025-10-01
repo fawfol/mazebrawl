@@ -14,17 +14,6 @@ body {
 /* =========================================
    Typing Race Game Styles
    ========================================= */
-.typing-game-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start; /* Aligns content to the top */
-  padding: 3rem 20px 20px 20px; /* Top margin and side padding */
-  gap: 25px; /* Consistent gap between elements */
-  height: 100vh;
-  box-sizing: border-box;
-}
-
 .typing-game-header {
   display: flex;
   justify-content: space-between;
@@ -65,7 +54,7 @@ body {
   overflow-x: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  margin-top: 5vh; /* Pushes the race track down */
+  margin-top: 7vh; /* Increased to bring it down */
 }
 .race-track::-webkit-scrollbar {
   display: none;
@@ -121,7 +110,7 @@ body {
   border: 2px solid #ccc;
   background-color: #333;
   color: #fff;
-  margin-bottom: 8vh; /* Pushes the input box up */
+  margin-bottom: 7vh; /* Increased to bring it up */
 }
 
 .input-error {
@@ -311,7 +300,7 @@ input[type='text']:focus {
   }
 }
 
-/* --- small Mobile Screens --- */
+/* --- Small Mobile Screens --- */
 @media (max-width: 480px) {
   .gamescene-selection button {
     width: 100%;
@@ -346,4 +335,5 @@ input[type='text']:focus {
     font-size: 1.2rem;
   }
 }
+
 
