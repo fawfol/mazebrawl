@@ -38,14 +38,20 @@ export default class LobbyScene extends Phaser.Scene {
         position: 'absolute', top: '10px', right: '10px'
     });
     const langLabel = document.createElement('span');
-    langLabel.innerText = 'Language: ';
+    langLabel.innerText = 'LANG/言語: ';
     this.languageSelector = document.createElement('select');
-    ['en', 'ja'].forEach(lang => {
-        const option = document.createElement('option');
-        option.value = lang;
-        option.innerText = lang.toUpperCase();
-        this.languageSelector.appendChild(option);
-    });
+    const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'ja', name: '日本語' }
+	];
+
+	languages.forEach(lang => {
+		const option = document.createElement('option');
+		option.value = lang.code; // Use 'en' or 'ja' as the value
+		option.innerText = lang.name; // Use 'English' or '日本語' as the display text
+		this.languageSelector.appendChild(option);
+	});
+
     this.languageSelector.value = this.languageManager.currentLang;
     this.languageSelector.onchange = async () => {
         const newLang = this.languageSelector.value;
