@@ -214,10 +214,8 @@ export default class TypingGame extends Phaser.Scene {
     }
   
   createUI() {
-    // This method now contains the code to set up the game UI, previously in create()
     document.body.innerHTML = '';
     
-    //main container
     this.container = document.createElement('div');
     Object.assign(this.container.style, {
       display: 'flex',
@@ -233,46 +231,41 @@ export default class TypingGame extends Phaser.Scene {
     });
     document.body.appendChild(this.container);
 
-    //round info and timer
+    // --- Header ---
     this.header = document.createElement('div');
-    Object.assign(this.header.style, {
-        display: 'flex',
-        justifyContent: 'space-between',
-        width: '80%',
-        maxWidth: '1000px',
-        alignItems: 'center'
-    });
+    this.header.className = 'typing-game-header';
 
-    this.roundText = document.createElement('h2');
-    this.roundText.innerText = `Round ${this.round} / ${this.maxRounds}`;
-    this.header.appendChild(this.roundText);
-    
-    // Player count element
-    this.playerCountText = document.createElement('h2');
-    this.header.appendChild(this.playerCountText);
-    
-    // Timer element
-    this.timerText = document.createElement('h2');
-    this.timerText.innerText = `Time: ${this.timeLimit}s`;
-    this.header.appendChild(this.timerText);
+    // Round Info
+    const roundItem = this.createHeaderItem('Round');
+    this.roundText = roundItem.querySelector('.header-value');
+    this.roundText.innerText = `${this.round}/${this.maxRounds}`;
 
+    // Player Count Info
+    const playerCountItem = this.createHeaderItem('Players');
+    this.playerCountText = playerCountItem.querySelector('.header-value');
+
+    // Time Info
+    const timeItem = this.createHeaderItem('Time');
+    this.timerText = timeItem.querySelector('.header-value');
+    this.timerText.innerText = `${this.timeLimit}s`;
+    
+    this.header.appendChild(roundItem);
+    this.header.appendChild(playerCountItem);
+    this.header.appendChild(timeItem);
     this.container.appendChild(this.header);
     
-    // start the timer
     let timeLeft = this.timeLimit;
     this.countdownTimer = setInterval(() => {
         timeLeft--;
         if (timeLeft >= 0) {
-            this.timerText.innerText = `Time: ${timeLeft}s`;
+            this.timerText.innerText = `${timeLeft}s`;
         } else {
             clearInterval(this.countdownTimer);
         }
     }, 1000);
 
-    //create race track
     this.createRaceTrack();
 
-    //input box
     this.input = document.createElement('input');
     this.input.type = 'text';
     this.input.placeholder = 'Type the highlighted word and press space...';
@@ -288,25 +281,25 @@ export default class TypingGame extends Phaser.Scene {
     this.container.appendChild(this.input);
     this.input.focus();
 
-    //progress bars
     this.createProgressBars();
 
-    //event listeners
+    // Event Listeners
     this.input.addEventListener('keydown', this.handleInput.bind(this));
+    
     this.socket.off('updateProgress');
     this.socket.on('updateProgress', ({ playerId, progress }) => {
       this.updateCharacterPosition(playerId, progress);
     });
 
-	this.socket.off('roundEnded'); // prevent duplicate listeners
+	this.socket.off('roundEnded');
 	this.socket.on('roundEnded', ({ scores, finishOrder }) => {
-	  clearInterval(this.countdownTimer); // Stop the timer on round end
+	  clearInterval(this.countdownTimer);
 	  this.showRoundResults(scores);
 	});
 
     this.socket.off('gameEnded');
     this.socket.on('gameEnded', ({ rankedPlayers }) => {
-        clearInterval(this.countdownTimer); // Stop the timer on game end
+        clearInterval(this.countdownTimer);
 	    this.showFinalResults(rankedPlayers);
 	});
 
@@ -316,7 +309,6 @@ export default class TypingGame extends Phaser.Scene {
         this.leaderId = data.leaderId;
         this.updatePlayerCount();
         
-        // Hide UI elements of players who have left
         Object.keys(this.playerChars).forEach(playerId => {
             if (!this.players.some(p => p.id === playerId)) {
                 if (this.playerChars[playerId]) this.playerChars[playerId].style.display = 'none';
@@ -327,19 +319,35 @@ export default class TypingGame extends Phaser.Scene {
         });
     });
 
-    //initial UI update
+    // Initial UI update
     this.updateBlockStyles();
     this.players.forEach(p => this.updateCharacterPosition(p.id, 0));
-    this.updatePlayerCount(); // Initial call
+    this.updatePlayerCount();
+  }
+
+  createHeaderItem(labelText) {
+      const item = document.createElement('div');
+      item.className = 'header-item';
+      
+      const label = document.createElement('span');
+      label.className = 'header-label';
+      label.innerText = labelText;
+      
+      const value = document.createElement('span');
+      value.className = 'header-value';
+      
+      item.appendChild(label);
+      item.appendChild(value);
+      
+      return item;
   }
   
   updatePlayerCount() {
     if (this.playerCountText) {
-        this.playerCountText.innerText = `Players: ${this.players.length}/${this.maxPlayers}`;
+        this.playerCountText.innerText = `${this.players.length}/${this.maxPlayers}`;
     }
   }
   
-  // Add a shutdown method to clean up listeners
   shutdown() {
     if (this.countdownTimer) {
         clearInterval(this.countdownTimer);
@@ -349,9 +357,6 @@ export default class TypingGame extends Phaser.Scene {
     this.socket.off('gameEnded');
     this.socket.off('roomUpdate');
   }
-
-
-  // --- UI Creation ---
 
   createRaceTrack() {
     const track = document.createElement('div');
@@ -378,7 +383,6 @@ export default class TypingGame extends Phaser.Scene {
     this.container.appendChild(track);
     this.trackElement = track;
 
-    // player characters
     const emojis = ['🏎️', '🚗', '🚙', '🚕', '🚓', '🚑', '🚚'];
     this.players.forEach((p, idx) => {
       const char = document.createElement('div');
@@ -399,7 +403,7 @@ export default class TypingGame extends Phaser.Scene {
         gap: '8px',
         width: '90%',
         maxWidth: '1000px',
-        marginTop: '10px' // Added for spacing
+        marginTop: '10px'
     });
 
     this.progressBars = {};
@@ -447,8 +451,6 @@ export default class TypingGame extends Phaser.Scene {
     this.container.appendChild(container);
   }
 
-  // --- Gameplay ---
-
   handleInput(e) {
     if (e.key !== ' ' && e.code !== 'Space') return;
     e.preventDefault();
@@ -487,7 +489,6 @@ export default class TypingGame extends Phaser.Scene {
       }
     });
 
-    // ADD THIS BLOCK TO AUTOMATICALLY SCROLL
     const currentBlock = this.wordBlocks[this.currentWordIndex];
     if (currentBlock) {
       currentBlock.scrollIntoView({
@@ -503,27 +504,18 @@ export default class TypingGame extends Phaser.Scene {
     const bar = this.progressBars[playerId];
     if (!char || !bar) return;
 
-    //progress bar update (this part is fine)
     const percent = (progress * 100).toFixed(0);
     bar.fill.style.width = `${percent}%`;
     bar.percentage.innerText = `${percent}%`;
 
-    // --- REVISED TRACK POSITION LOGIC ---
-
-    //select ONLY the blocks, ignoring the player cars.
     const allBlocks = this.trackElement.querySelectorAll('.block');
-    if (allBlocks.length === 0) return; //failsafe if blocks aren't rendered
+    if (allBlocks.length === 0) return;
 
-    //calculate the target index based on progress.
     const targetIndex = Math.floor(progress * this.words.length);
 
-    //determine the target element. We add 1 to the index to skip the "START" block.
-    //if progress is 100%, target the very last block (FINISH).
     let targetEl = (progress >= 1)
       ? allBlocks[allBlocks.length - 1]
       : allBlocks[targetIndex + 1];
-
-    // --- END OF REVISED LOGIC ---
 
     if (targetEl) {
       const trackRect = this.trackElement.getBoundingClientRect();
@@ -533,3 +525,4 @@ export default class TypingGame extends Phaser.Scene {
     }
   }
 }
+
