@@ -6,6 +6,9 @@ export default class LobbyScene extends Phaser.Scene {
   }
 
    create() {
+	document.body.innerHTML = '';
+
+
     const isMobile = this.scale.width < 768;
     const titleFontSize = isMobile ? '32px' : '48px';
     const topMargin = 40; //approx 2.5rem (2.5 * 16px)
