@@ -130,7 +130,7 @@ io.on('connection', (socket) => {
 
     if (playerRoom && playerRoom.leaderId === socket.id) {
         if (gameType === 'TypingGame') {
-            const preCountdownDuration = 5; // 5 seconds
+            const preCountdownDuration = 10; // CHANGED: Increased from 5 to 10 seconds
             
             // Emit the pre-game countdown event
             io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType });
@@ -147,6 +147,24 @@ io.on('connection', (socket) => {
         if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
     }
 });
+	
+	//New event listener for the leader skipping the tutorial
+  socket.on('leaderSkipTutorial', () => {
+    let playerRoomId = null;
+    let playerRoom = null;
+    for (const [roomId, room] of rooms.entries()) {
+      if (room.players.some(p => p.id === socket.id)) {
+        playerRoomId = roomId;
+        playerRoom = room;
+        break;
+      }
+    }
+
+    if (playerRoom && playerRoom.leaderId === socket.id) {
+        console.log(`Leader in room ${playerRoomId} skipped the tutorial.`);
+        io.to(playerRoomId).emit('tutorialSkipped');
+    }
+  });
 
 
   socket.on('typingProgress', (progress) => {

@@ -188,30 +188,97 @@ export default class TypingGame extends Phaser.Scene {
             width: '100%', height: '100%',
             background: 'rgba(0,0,0,0.8)',
             display: 'flex',
+            flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: '1000'
+            zIndex: '1000',
+            gap: '10px'
         });
         document.body.appendChild(overlay);
 
         const countdownText = document.createElement('h1');
         countdownText.style.fontSize = '10rem';
         countdownText.style.color = 'white';
-        countdownText.innerText = this.preCountdownDuration;
         overlay.appendChild(countdownText);
 
+        const tutorialText = document.createElement('p');
+        tutorialText.innerText = 'How to Play: Type the highlighted word and press SPACE to submit.';
+        Object.assign(tutorialText.style, {
+            color: '#eee',
+            fontSize: '1.5rem',
+            maxWidth: '80%',
+            textAlign: 'center'
+        });
+        overlay.appendChild(tutorialText);
+
+        let skipButton;
+        if (this.socket.id === this.leaderId) {
+            skipButton = document.createElement('button');
+            skipButton.innerText = 'Skip Tutorial (Start in 3s)';
+            Object.assign(skipButton.style, {
+                padding: '10px 20px',
+                fontSize: '1.2rem',
+                cursor: 'pointer'
+            });
+            skipButton.onclick = () => {
+                this.socket.emit('leaderSkipTutorial');
+                skipButton.disabled = true;
+                skipButton.innerText = 'Skipping...';
+            };
+            overlay.appendChild(skipButton);
+        }
+
+        let countdownInterval;
+
+        // This function is now ONLY for the final, short countdown
+        const startFinalCountdown = (duration) => {
+            if (countdownInterval) clearInterval(countdownInterval); // Clear the long timer
+            
+            if (skipButton) skipButton.style.display = 'none';
+            tutorialText.style.display = 'none';
+
+            let count = duration;
+            countdownText.innerText = count;
+
+            const finalInterval = setInterval(() => {
+                count--;
+                if (count >= 0) {
+                    countdownText.innerText = count === 0 ? 'GO!' : count;
+                } else {
+                    clearInterval(finalInterval);
+                    overlay.remove();
+                }
+            }, 1000);
+        };
+        
+        // Listen for the skip event from the server
+        this.socket.once('tutorialSkipped', () => {
+            startFinalCountdown(3);
+        });
+
+        // THE FIX: This is the new, separate logic for the initial long countdown
         let currentCount = this.preCountdownDuration;
-        const countdownInterval = setInterval(() => {
+        countdownText.innerText = currentCount;
+
+        countdownInterval = setInterval(() => {
             currentCount--;
-            if (currentCount >= 0) {
+            
+            if (currentCount > 3) {
+                // Just tick down while the tutorial is showing
+                countdownText.innerText = currentCount;
+            } else if (currentCount >= 0) {
+                // Once the timer gets low, hide the tutorial and button automatically
+                if (skipButton) skipButton.style.display = 'none';
+                tutorialText.style.display = 'none';
                 countdownText.innerText = currentCount === 0 ? 'GO!' : currentCount;
             } else {
+                // Timer finished naturally
                 clearInterval(countdownInterval);
                 overlay.remove();
-                //startGame event from the server will trigger the actual game start
             }
         }, 1000);
     }
+ 
   
   createUI() {
     document.body.innerHTML = '';
