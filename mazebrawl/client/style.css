@@ -8,33 +8,54 @@ body {
     Arial, sans-serif;
   background-color: #111111;
   color: #ffffff;
-  overflow-x: hidden; /* Prevent horizontal scroll on the body */
+  overflow: hidden; /* Prevent scrolling on the body */
 }
 
 /* =========================================
    Typing Race Game Styles
    ========================================= */
+.typing-game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* Aligns content to the top */
+  padding: 3rem 20px 20px 20px; /* Top margin and side padding */
+  gap: 25px; /* Consistent gap between elements */
+  height: 100vh;
+  box-sizing: border-box;
+}
 
 .typing-game-header {
   display: flex;
   justify-content: space-between;
-  width: 90%;
+  width: 100%;
   max-width: 1000px;
-  align-items: center;
-  margin-bottom: 10px;
 }
 
-.header-text {
+.header-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.header-label {
+  font-size: 0.9rem;
+  color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.header-value {
   font-size: 1.5rem;
   font-weight: bold;
-  margin: 0 10px;
-  white-space: nowrap;
+  color: #fff;
 }
 
 .race-track {
   display: flex;
   align-items: center;
-  width: 90%;
+  width: 100%;
   max-width: 1000px;
   background-color: #333;
   border-radius: 10px;
@@ -44,6 +65,7 @@ body {
   overflow-x: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  margin-top: 5vh; /* Pushes the race track down */
 }
 .race-track::-webkit-scrollbar {
   display: none;
@@ -89,9 +111,30 @@ body {
   text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
+.typing-input {
+  font-size: 1.5rem;
+  width: 90%;
+  max-width: 600px;
+  padding: 10px;
+  text-align: center;
+  border-radius: 5px;
+  border: 2px solid #ccc;
+  background-color: #333;
+  color: #fff;
+  margin-bottom: 8vh; /* Pushes the input box up */
+}
+
 .input-error {
   border: 2px solid red !important;
   animation: shake 0.2s;
+}
+
+.progress-bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 1000px;
 }
 
 @keyframes shake {
@@ -216,7 +259,7 @@ input[type='text']:focus {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  width: 100%; /* Changed from 90% to fill wrapper */
+  width: 100%;
   height: 130px;
   background: #fff;
   color: #000;
@@ -236,7 +279,7 @@ input[type='text']:focus {
 .chat-input-wrapper {
   display: flex;
   gap: 5px;
-  width: 100%; /* Changed from 90% to fill wrapper */
+  width: 100%;
   margin-top: 5px;
   box-sizing: border-box;
 }
@@ -268,7 +311,7 @@ input[type='text']:focus {
   }
 }
 
-/* --- Small Mobile Screens --- */
+/* --- small Mobile Screens --- */
 @media (max-width: 480px) {
   .gamescene-selection button {
     width: 100%;
@@ -285,18 +328,22 @@ input[type='text']:focus {
     padding: 8px;
     font-size: 0.9rem;
   }
-
-  /* NEW styles for Typing Game Header */
-  .typing-game-header {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 5px 15px; /* vertical and horizontal gap */
-    width: 100%;
+  
+  .typing-game-container {
+    gap: 15px; /* Reduce gap on small screens */
+    padding-top: 2rem;
   }
 
-  .header-text {
-    font-size: 1rem; /* Make font smaller on mobile */
-    margin: 0;
+  .header-label {
+    font-size: 0.7rem;
+  }
+
+  .header-value {
+    font-size: 1.1rem;
+  }
+
+  .typing-input {
+    font-size: 1.2rem;
   }
 }
+

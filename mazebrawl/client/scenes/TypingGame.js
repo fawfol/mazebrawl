@@ -13,19 +13,19 @@ export default class TypingGame extends Phaser.Scene {
     this.round = data.round || 1;
     this.maxRounds = data.maxRounds || 5;
     this.timeLimit = data.timeLimit || 60; // default to 60 seconds if not provided
-    this.countdownTimer = null; // A timer variable to track the countdown
+    this.countdownTimer = null; //timer variable to track the countdown
     this.maxPlayers = 7;
     
-    // NEW: Check for a pre-countdown duration
+    //check for a pre-countdown duration
     this.preCountdownDuration = data.preCountdown || 0;
 
     this.words = this.sentence.split(' ');
     this.currentWordIndex = 0;
 
-    this.playerChars = {}; // character DOM elements
+    this.playerChars = {}; //character DOM elements
     this.wordBlocks = [];
     
-    // Bind event listener for game start
+    //bind event listener for game start
     this.socket.off('startGame');
     this.socket.on('startGame', (gameType, sentence, extra) => {
         this.sentence = sentence;
@@ -36,9 +36,9 @@ export default class TypingGame extends Phaser.Scene {
     });
   }
   
-  // A separate method to set up the game UI and logic
+  //separate method to set up the game UI and logic
   startRound() {
-    // Reset game state for the new round
+    //reset game state for the new round
     this.words = this.sentence.split(' ');
     this.currentWordIndex = 0;
     this.wordBlocks = [];
@@ -208,7 +208,7 @@ export default class TypingGame extends Phaser.Scene {
             } else {
                 clearInterval(countdownInterval);
                 overlay.remove();
-                // The startGame event from the server will trigger the actual game start
+                //startGame event from the server will trigger the actual game start
             }
         }, 1000);
     }
@@ -284,7 +284,7 @@ export default class TypingGame extends Phaser.Scene {
     this.createProgressBars();
 
     // Event Listeners
-    this.input.addEventListener('keydown', this.handleInput.bind(this));
+    this.input.addEventListener('input', this.handleInput.bind(this));
     
     this.socket.off('updateProgress');
     this.socket.on('updateProgress', ({ playerId, progress }) => {
@@ -451,32 +451,39 @@ export default class TypingGame extends Phaser.Scene {
     this.container.appendChild(container);
   }
 
-  handleInput(e) {
-    if (e.key !== ' ' && e.code !== 'Space') return;
-    e.preventDefault();
+  // NEW FUNCTION - ADD THIS
+	handleInput(e) {
+		const inputValue = this.input.value;
 
-    const typedWord = this.input.value.trim();
-    const targetWord = this.words[this.currentWordIndex];
+		// We check if the last character is a space, which indicates a word submission.
+		if (inputValue.slice(-1) !== ' ') return;
+		
+		const typedWord = inputValue.trim();
+		if (!typedWord) {
+		    this.input.value = '';
+		    return;
+		}
 
-    if (typedWord === targetWord) {
-      this.input.classList.remove('input-error');
-      this.input.value = '';
-      this.currentWordIndex++;
+		const targetWord = this.words[this.currentWordIndex];
 
-      const progress = this.currentWordIndex / this.words.length;
-      this.socket.emit('typingProgress', progress);
-      this.updateCharacterPosition(this.socket.id, progress);
-      this.updateBlockStyles();
+		if (typedWord === targetWord) {
+		  this.input.classList.remove('input-error');
+		  this.input.value = ''; // Clear input after correct word
+		  this.currentWordIndex++;
 
-      if (this.currentWordIndex === this.words.length) {
-        this.input.disabled = true;
-        this.input.placeholder = 'You finished!';
-      }
-    } else {
-      this.input.classList.add('input-error');
-      setTimeout(() => this.input.classList.remove('input-error'), 200);
-    }
-  }
+		  const progress = this.currentWordIndex / this.words.length;
+		  this.socket.emit('typingProgress', progress);
+		  this.updateCharacterPosition(this.socket.id, progress);
+		  this.updateBlockStyles();
+
+		  if (this.currentWordIndex === this.words.length) {
+		    this.input.disabled = true;
+		    this.input.placeholder = 'You finished!';
+		  }
+		} else {
+		  this.input.classList.add('input-error');
+		}
+	}
 
  updateBlockStyles() {
     this.wordBlocks.forEach((block, index) => {
