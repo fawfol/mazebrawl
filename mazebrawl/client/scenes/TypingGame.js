@@ -15,6 +15,7 @@ export default class TypingGame extends Phaser.Scene {
     this.timeLimit = data.timeLimit || 60; // default to 60 seconds if not provided
     this.countdownTimer = null; //timer variable to track the countdown
     this.maxPlayers = 7;
+	this.language = data.language || 'en';
     
     //check for a pre-countdown duration
     this.preCountdownDuration = data.preCountdown || 0;
@@ -346,21 +347,13 @@ export default class TypingGame extends Phaser.Scene {
       border: '2px solid #ccc'
     });
     this.container.appendChild(this.input);
-    this.input.focus();
+     this.input.focus();
     
-    //autocap for english
-	 this.input.addEventListener('input', () => {
-        //if lang is not Japanese.
-        if (this.language !== 'ja') {
-            this.input.value = this.input.value.toUpperCase();
-        }
-    });
-
     this.createProgressBars();
 
-    // Event Listeners
+    // Event Listeners -
     this.input.addEventListener('input', this.handleInput.bind(this));
-    
+
     this.socket.off('updateProgress');
     this.socket.on('updateProgress', ({ playerId, progress }) => {
       this.updateCharacterPosition(playerId, progress);
@@ -528,41 +521,47 @@ export default class TypingGame extends Phaser.Scene {
 
   //logic of word recong
 	handleInput(e) {
+    // First, handle auto-capitalization for English before any other logic.
+    if (this.language !== 'ja') {
+        const cursorPosition = this.input.selectionStart;
+        this.input.value = this.input.value.toUpperCase();
+        this.input.setSelectionRange(cursorPosition, cursorPosition);
+    }
+
     const inputValue = this.input.value;
 
+    // Now, choose the validation logic based on language.
     if (this.language === 'ja') {
-        // --- JAPANESE LOGIC: character-by-character check ---
-        let correctChars = 0;
-        for (let i = 0; i < inputValue.length; i++) {
-            if (inputValue[i] === this.sentence[i]) {
-                correctChars++;
-            } else {
-                //if a character is wrong, stop and show an error.
-                this.input.classList.add('input-error');
-                return; //exit the function early
+        // --- JAPANESE LOGIC: Checks every character, no space needed ---
+        
+        // Check if the entire typed string matches the beginning of the sentence
+        if (this.sentence.startsWith(inputValue)) {
+            // All good so far
+            this.input.classList.remove('input-error');
+            
+            const progress = inputValue.length / this.sentence.length;
+            this.socket.emit('typingProgress', progress);
+            this.updateCharacterPosition(this.socket.id, progress);
+
+            // Update the visual blocks on the track
+            this.currentWordIndex = Math.floor(progress * this.words.length);
+            this.updateBlockStyles();
+
+            if (progress >= 1) {
+                this.input.disabled = true;
+                this.input.placeholder = 'You finished!';
             }
-        }
-        
-        //if we got this far, all typed characters are correct.
-        this.input.classList.remove('input-error');
-
-        const progress = correctChars / this.sentence.length;
-        this.socket.emit('typingProgress', progress);
-        this.updateCharacterPosition(this.socket.id, progress);
-        
-        //visually update the track for Japanese (simplified)
-        this.currentWordIndex = Math.floor(progress * this.words.length);
-        this.updateBlockStyles();
-
-        if (progress >= 1) {
-            this.input.disabled = true;
-            this.input.placeholder = 'You finished!';
+        } else {
+            // A mistake was made
+            this.input.classList.add('input-error');
         }
 
     } else {
-        // --- ENGLISH LOGIC: Word-by-word check (your existing logic) ---
-        if (inputValue.slice(-1) !== ' ') return; //check for spacebar press
+        // --- ENGLISH LOGIC: Your original logic that needs a space ---
         
+        // Only proceed if a space is typed at the end.
+        if (!inputValue.endsWith(' ')) return;
+
         const typedWord = inputValue.trim();
         if (!typedWord) {
             this.input.value = '';
@@ -573,7 +572,7 @@ export default class TypingGame extends Phaser.Scene {
 
         if (typedWord === targetWord) {
             this.input.classList.remove('input-error');
-            this.input.value = ''; //clear input
+            this.input.value = ''; // Clear input for the next word
             this.currentWordIndex++;
 
             const progress = this.currentWordIndex / this.words.length;
@@ -590,6 +589,7 @@ export default class TypingGame extends Phaser.Scene {
         }
     }
   }
+
 
  updateBlockStyles() {
     this.wordBlocks.forEach((block, index) => {
