@@ -13,14 +13,14 @@ export default class GameScene extends Phaser.Scene {
     this.leaderId = data.leaderId;
     this.isLeader = this.players[this.myIndex]?.id === data.leaderId;
     this.maxPlayers = 7;
-    this.language = data.language || 'en'; // ADDED: Receive language from Lobby
+    this.language = data.language || 'en'; //receive language from Lobby
   }
 
-  async create() { // CHANGED: Made async
+  async create() { 
     console.log('GameScene started');
     document.body.innerHTML = '';
 
-    // ADDED: Instantiate and load language
+    //instantiate and load language
     this.languageManager = new LanguageManager(this);
     await this.languageManager.loadLanguage(this.language);
 
@@ -34,6 +34,7 @@ export default class GameScene extends Phaser.Scene {
         socket: this.socket,
         leaderId: this.leaderId,
         preCountdown: duration,
+        language: this.language,
       });
     });
 
@@ -42,7 +43,7 @@ export default class GameScene extends Phaser.Scene {
     this.domContainer.style.justifyContent = 'center'; 
     document.body.appendChild(this.domContainer);
 
-    // ADDED: Language Selector for leader
+    //language Selector for leader
     if (this.isLeader) {
         const langContainer = document.createElement('div');
         Object.assign(langContainer.style, {

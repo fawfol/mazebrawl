@@ -23,7 +23,12 @@ export default class LanguageManager {
     }
   }
 
-  get(key) {
-    return this.translations[key] || key; //return the key itself if not found
+  //get() can now handle simple replacements
+  get(key, replacements = {}) {
+    let translation = this.translations[key] || key;
+    for (const placeholder in replacements) {
+        translation = translation.replace(`{${placeholder}}`, replacements[placeholder]);
+    }
+    return translation;
   }
 }

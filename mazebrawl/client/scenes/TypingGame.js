@@ -347,6 +347,14 @@ export default class TypingGame extends Phaser.Scene {
     });
     this.container.appendChild(this.input);
     this.input.focus();
+    
+    //autocap for english
+	 this.input.addEventListener('input', () => {
+        //if lang is not Japanese.
+        if (this.language !== 'ja') {
+            this.input.value = this.input.value.toUpperCase();
+        }
+    });
 
     this.createProgressBars();
 
@@ -518,39 +526,70 @@ export default class TypingGame extends Phaser.Scene {
     this.container.appendChild(container);
   }
 
-  // NEW FUNCTION - ADD THIS
+  //logic of word recong
 	handleInput(e) {
-		const inputValue = this.input.value;
+    const inputValue = this.input.value;
 
-		// We check if the last character is a space, which indicates a word submission.
-		if (inputValue.slice(-1) !== ' ') return;
-		
-		const typedWord = inputValue.trim();
-		if (!typedWord) {
-		    this.input.value = '';
-		    return;
-		}
+    if (this.language === 'ja') {
+        // --- JAPANESE LOGIC: character-by-character check ---
+        let correctChars = 0;
+        for (let i = 0; i < inputValue.length; i++) {
+            if (inputValue[i] === this.sentence[i]) {
+                correctChars++;
+            } else {
+                //if a character is wrong, stop and show an error.
+                this.input.classList.add('input-error');
+                return; //exit the function early
+            }
+        }
+        
+        //if we got this far, all typed characters are correct.
+        this.input.classList.remove('input-error');
 
-		const targetWord = this.words[this.currentWordIndex];
+        const progress = correctChars / this.sentence.length;
+        this.socket.emit('typingProgress', progress);
+        this.updateCharacterPosition(this.socket.id, progress);
+        
+        //visually update the track for Japanese (simplified)
+        this.currentWordIndex = Math.floor(progress * this.words.length);
+        this.updateBlockStyles();
 
-		if (typedWord === targetWord) {
-		  this.input.classList.remove('input-error');
-		  this.input.value = ''; // Clear input after correct word
-		  this.currentWordIndex++;
+        if (progress >= 1) {
+            this.input.disabled = true;
+            this.input.placeholder = 'You finished!';
+        }
 
-		  const progress = this.currentWordIndex / this.words.length;
-		  this.socket.emit('typingProgress', progress);
-		  this.updateCharacterPosition(this.socket.id, progress);
-		  this.updateBlockStyles();
+    } else {
+        // --- ENGLISH LOGIC: Word-by-word check (your existing logic) ---
+        if (inputValue.slice(-1) !== ' ') return; //check for spacebar press
+        
+        const typedWord = inputValue.trim();
+        if (!typedWord) {
+            this.input.value = '';
+            return;
+        }
 
-		  if (this.currentWordIndex === this.words.length) {
-		    this.input.disabled = true;
-		    this.input.placeholder = 'You finished!';
-		  }
-		} else {
-		  this.input.classList.add('input-error');
-		}
-	}
+        const targetWord = this.words[this.currentWordIndex];
+
+        if (typedWord === targetWord) {
+            this.input.classList.remove('input-error');
+            this.input.value = ''; //clear input
+            this.currentWordIndex++;
+
+            const progress = this.currentWordIndex / this.words.length;
+            this.socket.emit('typingProgress', progress);
+            this.updateCharacterPosition(this.socket.id, progress);
+            this.updateBlockStyles();
+
+            if (this.currentWordIndex === this.words.length) {
+                this.input.disabled = true;
+                this.input.placeholder = 'You finished!';
+            }
+        } else {
+            this.input.classList.add('input-error');
+        }
+    }
+  }
 
  updateBlockStyles() {
     this.wordBlocks.forEach((block, index) => {
