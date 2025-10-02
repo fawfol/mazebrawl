@@ -157,7 +157,7 @@ export default class TypingGame extends Phaser.Scene {
 		});
 		exitBtn.onclick = () => {
 		    overlay.remove();
-		    // Go back to GameScene
+		    //go back to GameScene
 		    this.scene.stop('TypingGame');
 		    this.scene.start('GameScene', {
 		        players: this.players,
@@ -520,73 +520,62 @@ export default class TypingGame extends Phaser.Scene {
   }
 
   //logic of word recong
-	handleInput(e) {
-    // First, handle auto-capitalization for English before any other logic.
+	  handleInput(e) {
+    // Auto-capitalization for non-Japanese languages.
     if (this.language !== 'ja') {
-        const cursorPosition = this.input.selectionStart;
-        this.input.value = this.input.value.toUpperCase();
-        this.input.setSelectionRange(cursorPosition, cursorPosition);
+      const cursorPosition = this.input.selectionStart;
+      this.input.value = this.input.value.toUpperCase();
+      this.input.setSelectionRange(cursorPosition, cursorPosition);
     }
 
     const inputValue = this.input.value;
+    const currentTargetWord = this.words[this.currentWordIndex];
 
-    // Now, choose the validation logic based on language.
-    if (this.language === 'ja') {
-        // --- JAPANESE LOGIC: Checks every character, no space needed ---
-        
-        // Check if the entire typed string matches the beginning of the sentence
-        if (this.sentence.startsWith(inputValue)) {
-            // All good so far
-            this.input.classList.remove('input-error');
-            
-            const progress = inputValue.length / this.sentence.length;
-            this.socket.emit('typingProgress', progress);
-            this.updateCharacterPosition(this.socket.id, progress);
+    // If the race is over, do nothing.
+    if (!currentTargetWord) {
+      return;
+    }
 
-            // Update the visual blocks on the track
-            this.currentWordIndex = Math.floor(progress * this.words.length);
-            this.updateBlockStyles();
+    // --- WORD SUBMISSION LOGIC ---
+    //check if the user is trying to submit a word by pressing space.
+    if (inputValue.endsWith(' ')) {
+      const typedWord = inputValue.trim();
 
-            if (progress >= 1) {
-                this.input.disabled = true;
-                this.input.placeholder = 'You finished!';
-            }
-        } else {
-            // A mistake was made
-            this.input.classList.add('input-error');
+      if (typedWord === currentTargetWord) {
+        // CORRECT WORD SUBMITTED
+        this.input.classList.remove('input-error');
+        this.input.value = ''; //clear input for the next word
+        this.currentWordIndex++;
+
+        //update progress and UI
+        const progress = this.currentWordIndex / this.words.length;
+        this.socket.emit('typingProgress', progress);
+        this.updateCharacterPosition(this.socket.id, progress);
+        this.updateBlockStyles();
+
+        //check if the race is finished
+        if (this.currentWordIndex === this.words.length) {
+          this.input.disabled = true;
+          this.input.placeholder = 'You finished!';
         }
+      } else {
+        // INCORRECT WORD SUBMITTED
+        // uer pressed space, but the word was wrong.
+        this.input.classList.add('input-error');
+      }
+      
+      // Since we handled a submission attempt, we're done.
+      return;
+    }
 
+    // --- REAL-TIME VALIDATION LOGIC ---
+    //if no space was pressed, we just validate the characters typed so far.
+    if (currentTargetWord.startsWith(inputValue)) {
+      //typing is correct so far
+      this.input.classList.remove('input-error');
     } else {
-        // --- ENGLISH LOGIC: Your original logic that needs a space ---
-        
-        // Only proceed if a space is typed at the end.
-        if (!inputValue.endsWith(' ')) return;
-
-        const typedWord = inputValue.trim();
-        if (!typedWord) {
-            this.input.value = '';
-            return;
-        }
-
-        const targetWord = this.words[this.currentWordIndex];
-
-        if (typedWord === targetWord) {
-            this.input.classList.remove('input-error');
-            this.input.value = ''; // Clear input for the next word
-            this.currentWordIndex++;
-
-            const progress = this.currentWordIndex / this.words.length;
-            this.socket.emit('typingProgress', progress);
-            this.updateCharacterPosition(this.socket.id, progress);
-            this.updateBlockStyles();
-
-            if (this.currentWordIndex === this.words.length) {
-                this.input.disabled = true;
-                this.input.placeholder = 'You finished!';
-            }
-        } else {
-            this.input.classList.add('input-error');
-        }
+      // character was mistyped
+      this.input.classList.add('input-error');
     }
   }
 
