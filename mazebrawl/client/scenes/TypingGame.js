@@ -520,7 +520,7 @@ export default class TypingGame extends Phaser.Scene {
   }
 
   //logic of word recong
-	  handleInput(e) {
+	handleInput(e) {
     // Auto-capitalization for non-Japanese languages.
     if (this.language !== 'ja') {
       const cursorPosition = this.input.selectionStart;
@@ -536,45 +536,34 @@ export default class TypingGame extends Phaser.Scene {
       return;
     }
 
-    // --- WORD SUBMISSION LOGIC ---
-    //check if the user is trying to submit a word by pressing space.
-    if (inputValue.endsWith(' ')) {
-      const typedWord = inputValue.trim();
+    // --- 1. PERFECT MATCH (AUTO-SUBMIT) ---
+    // Check if the typed input is an exact match for the current word.
+    if (inputValue === currentTargetWord) {
+      // Correct! Clear the input and move to the next word automatically.
+      this.input.value = '';
+      this.currentWordIndex++;
 
-      if (typedWord === currentTargetWord) {
-        // CORRECT WORD SUBMITTED
-        this.input.classList.remove('input-error');
-        this.input.value = ''; //clear input for the next word
-        this.currentWordIndex++;
+      // Update progress and UI
+      const progress = this.currentWordIndex / this.words.length;
+      this.socket.emit('typingProgress', progress);
+      this.updateCharacterPosition(this.socket.id, progress);
+      this.updateBlockStyles();
 
-        //update progress and UI
-        const progress = this.currentWordIndex / this.words.length;
-        this.socket.emit('typingProgress', progress);
-        this.updateCharacterPosition(this.socket.id, progress);
-        this.updateBlockStyles();
-
-        //check if the race is finished
-        if (this.currentWordIndex === this.words.length) {
-          this.input.disabled = true;
-          this.input.placeholder = 'You finished!';
-        }
-      } else {
-        // INCORRECT WORD SUBMITTED
-        // uer pressed space, but the word was wrong.
-        this.input.classList.add('input-error');
+      // Check if the race is finished
+      if (this.currentWordIndex === this.words.length) {
+        this.input.disabled = true;
+        this.input.placeholder = 'You finished!';
       }
-      
-      // Since we handled a submission attempt, we're done.
-      return;
-    }
-
-    // --- REAL-TIME VALIDATION LOGIC ---
-    //if no space was pressed, we just validate the characters typed so far.
-    if (currentTargetWord.startsWith(inputValue)) {
-      //typing is correct so far
+    
+    // --- 2. CORRECT PREFIX ---
+    // If not a perfect match, check if they are at least typing it correctly so far.
+    } else if (currentTargetWord.startsWith(inputValue)) {
+      // Looking good, no error needed.
       this.input.classList.remove('input-error');
+    
+    // --- 3. INCORRECT ---
+    // If it's not a perfect match and not a correct prefix, it's a typo.
     } else {
-      // character was mistyped
       this.input.classList.add('input-error');
     }
   }
