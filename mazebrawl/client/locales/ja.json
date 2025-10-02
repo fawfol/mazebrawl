@@ -37,5 +37,14 @@
   "errorRoomNotExist": "ルームが存在しません。",
   "errorRoomFull": "ルームは満員です。",
   "errorMinPlayers": "プレイヤーが不足しています（最低2人）。",
-  "errorAllPlayersNotReady": "全てのプレイヤーが準備完了ではありません。"
+  "errorAllPlayersNotReady": "全てのプレイヤーが準備完了ではありません。",
+  "share": "こピー",
+  "roomIdDisplay": "ルーム ID: {id}",
+  "playersCountLobby": "プレイヤー : {count}/{max} (最低2人が必要)",
+  "logFoundRoomId": "URLからルームID {id} が見つかりました。",
+  "logRoomCreated": "ルームが作成されました！ID: {id}",
+  "logPlayerJoined": "{name}がルームに参加しました",
+  "logPlayerLeft": "{name}がルームを退出しました",
+  "logNewLeader": "リーダーが退出しました — 新しいリーダーは{name}です",
+  "logYouLeft": "ルームを退出しました。"
 }

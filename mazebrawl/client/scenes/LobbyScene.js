@@ -126,10 +126,22 @@ export default class LobbyScene extends Phaser.Scene {
     this.capacityText.style.fontSize = '16px';
     this.container.appendChild(this.capacityText);
 
-    // status text
+    //status text is now a container for the ID and share button
+    this.statusContainer = document.createElement('div');
+    this.statusContainer.style.marginTop = '25px';
+    this.statusContainer.style.display = 'flex';
+    this.statusContainer.style.alignItems = 'center';
+    this.statusContainer.style.justifyContent = 'center';
+    this.statusContainer.style.gap = '10px';
+    this.statusContainer.style.minHeight = '40px'; // Reserve space
+    this.container.appendChild(this.statusContainer);
+
     this.statusText = document.createElement('div');
-    this.statusText.style.marginTop = '25px';
-    this.container.appendChild(this.statusText);
+    this.statusContainer.appendChild(this.statusText);
+
+    this.shareBtn = document.createElement('button');
+    this.shareBtn.style.display = 'none'; //hidden by default
+    this.statusContainer.appendChild(this.shareBtn);
 
     // player list
     this.playerListDiv = document.createElement('div');
@@ -201,10 +213,10 @@ export default class LobbyScene extends Phaser.Scene {
     };
 
     //SOCKET EVENT HANDLERS
-    this.socket.on('roomCreated', (roomId) => this.logActivity(`Room created! ID: ${roomId}`));
-    this.socket.on('playerJoined', (name) => this.logActivity(`${name} joined the room`));
-    this.socket.on('playerLeft', (name) => this.logActivity(`${name} left the room`));
-    this.socket.on('leaderChanged', (newLeaderName) => this.logActivity(`Leader left — new leader is ${newLeaderName}`));
+    this.socket.on('roomCreated', (roomId) => this.logActivity(this.languageManager.get('logRoomCreated', { id: roomId })));
+    this.socket.on('playerJoined', (name) => this.logActivity(this.languageManager.get('logPlayerJoined', { name: name })));
+    this.socket.on('playerLeft', (name) => this.logActivity(this.languageManager.get('logPlayerLeft', { name: name })));
+    this.socket.on('leaderChanged', (newLeaderName) => this.logActivity(this.languageManager.get('logNewLeader', { name: newLeaderName })));
     this.socket.on('roomUpdate', (data) => this.updateRoom(data));
 	
     this.socket.on('gameHasStarted', () => {
@@ -224,8 +236,21 @@ export default class LobbyScene extends Phaser.Scene {
 
     await this.languageManager.loadLanguage(this.languageManager.currentLang);
     this.updateUIText();
+
+    // ADDED: Read Room ID from URL on load
+    this.checkUrlForRoomId();
   }
   
+  // ADDED: New method to check URL hash for a Room ID
+  checkUrlForRoomId() {
+    const roomIdFromUrl = window.location.hash.substring(1).toUpperCase();
+    if (roomIdFromUrl && roomIdFromUrl.length === 5) {
+        this.roomInput.value = roomIdFromUrl;
+        this.logActivity(this.languageManager.get('logFoundRoomId', { id: roomIdFromUrl }));
+        this.nameInput.focus(); // Focus on name input for convenience
+    }
+  }
+
   // ADDED: New method to update all UI text from translation files
   updateUIText() {
     this.title.innerText = this.languageManager.get('varyBrawlTitle');
@@ -235,6 +260,7 @@ export default class LobbyScene extends Phaser.Scene {
     this.joinBtn.innerText = this.languageManager.get('joinRoomButton');
     this.leaveBtn.innerText = this.languageManager.get('leaveRoomButton');
     this.startBtn.innerText = this.languageManager.get('startGameButton');
+    this.shareBtn.innerText = this.languageManager.get('share');
   }
 
   createRoom() {
@@ -246,15 +272,6 @@ export default class LobbyScene extends Phaser.Scene {
     // CHANGED: Send current language when creating a room
     this.socket.emit('createRoom', playerName, this.languageManager.currentLang, (response) => {
       if (response.success) {
-		this.statusText.style.fontSize = '17px';
-		this.statusText.style.fontWeight = 'bold';
-		this.statusText.style.letterSpacing = '1px';
-		this.statusText.style.color = 'yellow';
-		this.statusText.style.background = 'rgba(0,0,0,0.5)';
-		this.statusText.style.padding = '10px';
-		this.statusText.style.borderRadius = '2px';
-      
-		this.statusText.innerText = `Room ID: ${response.roomId}`;
         this.showLobbyUI(response);
       } else {
         alert('Error creating room.');
@@ -275,7 +292,6 @@ export default class LobbyScene extends Phaser.Scene {
     }
     this.socket.emit('joinRoom', roomId, playerName, (response) => {
       if (response.success) {
-        this.statusText.innerText = `Joined room : ${response.roomId}`;
         this.showLobbyUI(response);
       } else {
         alert(response.message || 'Error joining room.');
@@ -292,9 +308,10 @@ export default class LobbyScene extends Phaser.Scene {
           this.leaveBtn.style.display = 'none';
           this.playerListDiv.innerHTML = '';
           this.capacityText.innerText = '';
-          this.statusText.innerText = 'You left the room.';
-          this.logActivity('You left the room.');
-          this.langContainer.style.display = 'block'; // Show language selector again
+		  const msg = this.languageManager.get('logYouLeft');
+          	this.langContainer.style.display = 'block'; //show language selector again
+          	this.shareBtn.style.display = 'none'; //hide share button
+          window.location.hash = ''; //clear hash from URL
         } else {
           alert(response.message || 'Error leaving room.');
         }
@@ -305,6 +322,31 @@ export default class LobbyScene extends Phaser.Scene {
 	  this.formContainer.style.display = 'none';
       this.langContainer.style.display = 'none'; // Hide main language selector
 	  this.leaveBtn.style.display = 'inline-block';
+
+      // ADDED: Configure and show the share button
+      this.statusText.innerText = this.languageManager.get('roomIdDisplay', { id: data.roomId });
+      Object.assign(this.statusText.style, {
+        fontSize: '17px',
+        fontWeight: 'bold',
+        letterSpacing: '1px',
+        color: 'yellow',
+        background: 'rgba(0,0,0,0.5)',
+        padding: '10px 20px',
+        borderRadius: '5px'
+      });
+      this.shareBtn.style.display = 'inline-block';
+      const shareUrl = `${window.location.origin}${window.location.pathname}#${data.roomId}`;
+      this.shareBtn.onclick = () => {
+          navigator.clipboard.writeText(shareUrl).then(() => {
+              this.shareBtn.innerText = '✔';
+              setTimeout(() => { this.shareBtn.innerText = this.languageManager.get('share'); }, 5000);
+          }).catch(err => {
+              console.error('Failed to copy: ', err);
+              alert('Failed to copy link.');
+          });
+      };
+      window.location.hash = data.roomId; //set URL hash for refreshes
+
 
 	  if (this.socket.id !== data.leaderId) {
 		this.readyBtn.style.display = 'inline-block';
@@ -327,14 +369,14 @@ export default class LobbyScene extends Phaser.Scene {
   }
 
   async updateRoom(data) {
-    // ADDED: Language synchronization logic
+    //language synchronization logic
     if (data.language && data.language !== this.languageManager.currentLang) {
         console.log(`Room language is ${data.language}, switching...`);
         await this.languageManager.loadLanguage(data.language);
         this.languageSelector.value = data.language;
         this.updateUIText();
     }
-    // Only allow leader to change language
+    //only allow leader to change language
     this.languageSelector.disabled = (this.socket.id !== data.leaderId && data.players.some(p => p.id === this.socket.id));
 
 
@@ -344,14 +386,17 @@ export default class LobbyScene extends Phaser.Scene {
     this.playerListDiv.innerHTML = '';
 
     const maxPlayers = data.maxPlayers || 7;
-    this.capacityText.innerText = `Players: ${data.players.length}/${maxPlayers} (minimum 2 required)`;
+    this.capacityText.innerText = this.languageManager.get('playersCountLobby', {
+		count: data.players.length,
+		max: maxPlayers
+	});
 
     data.players.forEach((player, index) => {
         const playerDiv = document.createElement('div');
         let displayName = player.name;
 
         if (player.id === data.leaderId) {
-            displayName = `👑 ${displayName} [LEADER]`;
+            displayName = `${displayName} [LEADER]`;
             playerDiv.style.color = 'lime';
         } else {
             displayName = `${displayName} ${player.ready ? '[READY]' : '[NOT READY]'}`;
@@ -371,7 +416,7 @@ export default class LobbyScene extends Phaser.Scene {
 
     const currentPlayer = data.players.find(p => p.id === this.socket.id);
     if (currentPlayer && this.socket.id !== data.leaderId) {
-        // CHANGED: Use language manager for button text
+        //use language manager for button text
         this.readyBtn.innerText = currentPlayer.ready 
             ? this.languageManager.get('notReadyButton') 
             : this.languageManager.get('readyButton');

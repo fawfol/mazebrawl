@@ -37,5 +37,14 @@
   "errorRoomNotExist": "Room does not exist.",
   "errorRoomFull": "Room is full.",
   "errorMinPlayers": "Not enough players (min 2).",
-  "errorAllPlayersNotReady": "All players must be ready."
+  "errorAllPlayersNotReady": "All players must be ready.",
+  "share": "COPY",
+  "roomIdDisplay": "Room ID: {id}",
+  "playersCountLobby": "Players: {count}/{max} (minimum 2 required)",
+  "logFoundRoomId": "Found Room ID {id} in URL.",
+  "logRoomCreated": "Room created! ID: {id}",
+  "logPlayerJoined": "{name} joined the room",
+  "logPlayerLeft": "{name} left the room",
+  "logNewLeader": "Leader left — new leader is {name}",
+  "logYouLeft": "You left the room."
 }
