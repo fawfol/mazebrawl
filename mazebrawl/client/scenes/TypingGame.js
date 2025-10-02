@@ -531,6 +531,7 @@ export default class TypingGame extends Phaser.Scene {
 
   //logic of word recong
 	handleInput(e) {
+	this.input.value = this.input.value.replace(/\s/g, '');
     // Auto-capitalization for non-Japanese languages.
     if (this.language !== 'ja') {
       const cursorPosition = this.input.selectionStart;

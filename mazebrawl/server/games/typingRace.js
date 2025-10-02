@@ -169,7 +169,9 @@ class TypingRace {
 
     // Calculate the time limit based on sentence length
     const letterCount = sentence.replace(/\s/g, '').length;
-    const timeLimit = Math.ceil(letterCount * 1.2); // 1.2 is the 20% buffer
+    let timeLimit = Math.ceil(letterCount * 1.2); // 1.2 is the 20% buffer
+    timeLimit = Math.min(timeLimit, 60);
+
 
     // reset per-round state
     this.progress = {};
