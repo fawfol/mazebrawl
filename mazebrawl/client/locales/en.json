@@ -13,10 +13,10 @@
   "gameStarting": "Game starting...",
   "languageLabel": "Language: ",
   "playersCount": "Players: {count}/{max}",
-  "startTypingRace": "Start Typing Race",
+  "startTypingRace": "1. TYPING RACE",
   "moreGamesSoon": "More Games Soon...",
   "chatPlaceholder": "Chat with others...",
-  "sendButton": "Send",
+  "sendButton": "SEND",
   "backToLobbyButton": "Back to Lobby",
   "leavingButton": "Leaving...",
   "playerLeftMessage": "{playerName} has left the game.",
@@ -46,5 +46,6 @@
   "logPlayerJoined": "{name} joined the room",
   "logPlayerLeft": "{name} left the room",
   "logNewLeader": "Leader left — new leader is {name}",
-  "logYouLeft": "You left the room."
+  "logYouLeft": "You left the room.",
+  "logLanguageChanged": "The leader changed the language to {lang}."
 }

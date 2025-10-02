@@ -50,20 +50,30 @@ export default class GameScene extends Phaser.Scene {
             position: 'absolute', top: '10px', right: '10px', color: 'white'
         });
         const langLabel = document.createElement('span');
-        langLabel.innerText = 'Language: ';
-        this.languageSelector = document.createElement('select');
-        ['en', 'ja'].forEach(lang => {
-            const option = document.createElement('option');
-            option.value = lang;
-            option.innerText = lang.toUpperCase();
-            this.languageSelector.appendChild(option);
-        });
+        langLabel.innerText = 'LANG/言語: ';
+    this.languageSelector = document.createElement('select');
+    const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'ja', name: '日本語' }
+	];
+
+	languages.forEach(lang => {
+		const option = document.createElement('option');
+		option.value = lang.code; // Use 'en' or 'ja' as the value
+		option.innerText = lang.name; // Use 'English' or '日本語' as the display text
+		this.languageSelector.appendChild(option);
+	});
         this.languageSelector.value = this.languageManager.currentLang;
         this.languageSelector.onchange = async () => {
             const newLang = this.languageSelector.value;
             await this.languageManager.loadLanguage(newLang);
             this.updateUIText();
             this.socket.emit('changeLanguage', newLang);
+            
+            const selectedOption = this.languageSelector.options[this.languageSelector.selectedIndex];
+			const langName = selectedOption.text;
+			const chatMessage = this.languageManager.get('logLanguageChanged', { lang: langName });
+			this.addChatMessage(chatMessage, '#0030FF');
         };
         langContainer.appendChild(langLabel);
         langContainer.appendChild(this.languageSelector);
@@ -97,12 +107,17 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.socket.off('roomUpdate');
-    this.socket.on('roomUpdate', async (data) => { // CHANGED: Made async
-        // ADDED: Language synchronization
+    this.socket.on('roomUpdate', async (data) => { //made async
+        //language synchronization
         if (data.language && data.language !== this.languageManager.currentLang) {
             await this.languageManager.loadLanguage(data.language);
             if(this.languageSelector) this.languageSelector.value = data.language;
             this.updateUIText();
+            
+            const langKey = data.language === 'en' ? 'English' : '日本語';
+            const langName = this.languageManager.get(langKey);
+            const chatMessage = this.languageManager.get('logLanguageChanged', { lang: langName });
+            this.addChatMessage(chatMessage, '#0030FF');
         }
 
         this.players = data.players;
@@ -129,7 +144,10 @@ export default class GameScene extends Phaser.Scene {
   }
 
   updatePlayerCount() {
-    this.playerCountText.innerText = `Players: ${this.players.length}/${this.maxPlayers}`;
+    this.playerCountText.innerText = this.languageManager.get('playersCount', {
+		count: this.players.length,
+		max: this.maxPlayers
+	});
   }
 
   renderGameSelectionUI(container) {
@@ -137,7 +155,7 @@ export default class GameScene extends Phaser.Scene {
     gameList.className = 'gamescene-selection';
 
     const typingRaceBtn = document.createElement('button');
-    typingRaceBtn.innerText = 'Start Typing Race';
+    typingRaceBtn.innerText = this.languageManager.get('startTypingRace');
     typingRaceBtn.onclick = () => {
       this.statusText.innerText = 'Starting Typing Race...';
       this.socket.emit('selectGame', 'TypingGame', (response) => {
@@ -149,7 +167,7 @@ export default class GameScene extends Phaser.Scene {
     gameList.appendChild(typingRaceBtn);
 
     const soonBtn = document.createElement('button');
-    soonBtn.innerText = 'More Games Soon...';
+    soonBtn.innerText = this.languageManager.get('moreGamesSoon');
     soonBtn.disabled = true;
     gameList.appendChild(soonBtn);
 
@@ -171,11 +189,11 @@ export default class GameScene extends Phaser.Scene {
 
     this.chatInput = document.createElement('input');
     this.chatInput.type = 'text';
-    this.chatInput.placeholder = 'Chat with others...';
+    this.chatInput.placeholder = this.languageManager.get('chatPlaceholder');
     this.chatInput.className = 'chat-input';
 
     const sendBtn = document.createElement('button');
-    sendBtn.innerText = 'Send';
+	sendBtn.innerText = this.languageManager.get('sendButton');
     sendBtn.className = 'chat-send-btn';
     sendBtn.onclick = () => this.sendChatMessage();
 
@@ -200,18 +218,17 @@ export default class GameScene extends Phaser.Scene {
     });
 
     const backBtn = document.createElement('button');
-    backBtn.innerText = 'Back to Lobby';
-    backBtn.onclick = () => {
-        backBtn.disabled = true;
-        backBtn.innerText = 'Leaving...';
-
+    backBtn.innerText = this.languageManager.get('backToLobbyButton');
+	backBtn.onclick = () => {
+		backBtn.disabled = true;
+		backBtn.innerText = this.languageManager.get('leavingButton');
         this.socket.emit('leaveRoom', (response) => {
             if (response.success) {
                 this.scene.stop('GameScene');
                 this.scene.start('LobbyScene');
             } else {
                 backBtn.disabled = false;
-                backBtn.innerText = 'Back to Lobby';
+                backBtn.innerText = this.languageManager.get('backToLobbyButton');
             }
         });
     };

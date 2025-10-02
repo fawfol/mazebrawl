@@ -251,7 +251,7 @@ export default class LobbyScene extends Phaser.Scene {
     }
   }
 
-  // ADDED: New method to update all UI text from translation files
+  //new method to update all UI text from translation files
   updateUIText() {
     this.title.innerText = this.languageManager.get('varyBrawlTitle');
     this.nameInput.placeholder = this.languageManager.get('enterYourName');
@@ -269,7 +269,7 @@ export default class LobbyScene extends Phaser.Scene {
       alert('Please enter your name.');
       return;
     }
-    // CHANGED: Send current language when creating a room
+    //send current language when creating a room
     this.socket.emit('createRoom', playerName, this.languageManager.currentLang, (response) => {
       if (response.success) {
         this.showLobbyUI(response);

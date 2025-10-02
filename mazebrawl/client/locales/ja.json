@@ -13,7 +13,7 @@
   "gameStarting": "ゲームを開始しています...",
   "languageLabel": "言語: ",
   "playersCount": "プレイヤー: {count}/{max}",
-  "startTypingRace": "タイピングレースを開始",
+  "startTypingRace": "1. タイピングレース",
   "moreGamesSoon": "他のゲームは近日公開...",
   "chatPlaceholder": "他の人とチャット...",
   "sendButton": "送信",
@@ -46,5 +46,6 @@
   "logPlayerJoined": "{name}がルームに参加しました",
   "logPlayerLeft": "{name}がルームを退出しました",
   "logNewLeader": "リーダーが退出しました — 新しいリーダーは{name}です",
-  "logYouLeft": "ルームを退出しました。"
+  "logYouLeft": "ルームを退出しました。",
+  "logLanguageChanged": "リーダーが言語を{lang}に変更しました。"
 }
