@@ -1,4 +1,6 @@
 //mazebrawl/client/scenes/TypingGame.js
+import LanguageManager from '../LanguageManager.js';
+
 export default class TypingGame extends Phaser.Scene {
   constructor() {
     super({ key: 'TypingGame' });
@@ -9,7 +11,7 @@ export default class TypingGame extends Phaser.Scene {
     this.players = data.players;
     this.myIndex = data.myIndex;
     this.leaderId = data.leaderId;
-    this.sentence = data.sentence || 'The race is about to begin.';
+    this.sentence = ''; // Will be set by language manager or server
     this.round = data.round || 1;
     this.maxRounds = data.maxRounds || 5;
     this.timeLimit = data.timeLimit || 60; // default to 60 seconds if not provided
@@ -20,7 +22,7 @@ export default class TypingGame extends Phaser.Scene {
     //check for a pre-countdown duration
     this.preCountdownDuration = data.preCountdown || 0;
 
-    this.words = this.sentence.split(' ');
+    this.words = [];
     this.currentWordIndex = 0;
 
     this.playerChars = {}; //character DOM elements
@@ -39,6 +41,10 @@ export default class TypingGame extends Phaser.Scene {
   
   //separate method to set up the game UI and logic
   startRound() {
+    // If there's no sentence from the server yet, use the default
+    if (!this.sentence) {
+        this.sentence = this.languageManager.get('raceAboutToBegin');
+    }
     //reset game state for the new round
     this.words = this.sentence.split(' ');
     this.currentWordIndex = 0;
@@ -71,7 +77,7 @@ export default class TypingGame extends Phaser.Scene {
 		});
 
 		const title = document.createElement('h2');
-		title.innerText = `Round ${this.round} Results`;
+		title.innerText = this.languageManager.get('roundResultsTitle', { round: this.round });
 		box.appendChild(title);
 
 		const list = document.createElement('div');
@@ -95,11 +101,11 @@ export default class TypingGame extends Phaser.Scene {
 
 		// Countdown
 		let countdown = 8;
-		countdownText.innerText = `Next round in ... ${countdown}`;
+		countdownText.innerText = this.languageManager.get('nextRoundIn', { countdown: countdown });
 		const interval = setInterval(() => {
 		    countdown--;
 		    if (countdown > 0) {
-		        countdownText.innerText = `Next round in ... ${countdown}`;
+		        countdownText.innerText = this.languageManager.get('nextRoundIn', { countdown: countdown });
 		    } else {
 		        clearInterval(interval);
 		        overlay.remove();
@@ -131,7 +137,7 @@ export default class TypingGame extends Phaser.Scene {
 		});
 
 		const title = document.createElement('h2');
-		title.innerText = `Final Rankings`;
+		title.innerText = this.languageManager.get('finalRankingsTitle');
 		box.appendChild(title);
 
 		rankedPlayers.forEach(p => {
@@ -144,7 +150,7 @@ export default class TypingGame extends Phaser.Scene {
 		});
 
 		const exitBtn = document.createElement('button');
-		exitBtn.innerText = 'Exit to Game Selection';
+		exitBtn.innerText = this.languageManager.get('exitToGameSelectionButton');
 		Object.assign(exitBtn.style, {
 		    marginTop: '15px',
 		    padding: '8px 16px',
@@ -163,7 +169,8 @@ export default class TypingGame extends Phaser.Scene {
 		        players: this.players,
 		        myIndex: this.players.findIndex(p => p.id === this.socket.id),
 		        socket: this.socket,
-		        leaderId: this.leaderId
+		        leaderId: this.leaderId,
+                language: this.language
 		    });
 		};
 		box.appendChild(exitBtn);
@@ -172,7 +179,10 @@ export default class TypingGame extends Phaser.Scene {
 		document.body.appendChild(overlay);
 	}
 	
-	create() {
+	async create() {
+        this.languageManager = new LanguageManager(this);
+        await this.languageManager.loadLanguage(this.language);
+
         if (this.preCountdownDuration > 0) {
             this.showPreCountdown();
         } else {
@@ -203,7 +213,7 @@ export default class TypingGame extends Phaser.Scene {
         overlay.appendChild(countdownText);
 
         const tutorialText = document.createElement('p');
-        tutorialText.innerText = 'How to Play: Type the highlighted word and press SPACE to submit.';
+        tutorialText.innerText = this.languageManager.get('howToPlayTyping');
         Object.assign(tutorialText.style, {
             color: '#eee',
             fontSize: '1.5rem',
@@ -215,7 +225,7 @@ export default class TypingGame extends Phaser.Scene {
         let skipButton;
         if (this.socket.id === this.leaderId) {
             skipButton = document.createElement('button');
-            skipButton.innerText = 'Skip Tutorial (Start in 3s)';
+            skipButton.innerText = this.languageManager.get('skipTutorialButton');
             Object.assign(skipButton.style, {
                 padding: '10px 20px',
                 fontSize: '1.2rem',
@@ -224,7 +234,7 @@ export default class TypingGame extends Phaser.Scene {
             skipButton.onclick = () => {
                 this.socket.emit('leaderSkipTutorial');
                 skipButton.disabled = true;
-                skipButton.innerText = 'Skipping...';
+                skipButton.innerText = this.languageManager.get('skippingButton');
             };
             overlay.appendChild(skipButton);
         }
@@ -304,16 +314,16 @@ export default class TypingGame extends Phaser.Scene {
     this.header.className = 'typing-game-header';
 
     // Round Info
-    const roundItem = this.createHeaderItem('Round');
+    const roundItem = this.createHeaderItem(this.languageManager.get('headerRound'));
     this.roundText = roundItem.querySelector('.header-value');
     this.roundText.innerText = `${this.round}/${this.maxRounds}`;
 
     // Player Count Info
-    const playerCountItem = this.createHeaderItem('Players');
+    const playerCountItem = this.createHeaderItem(this.languageManager.get('headerPlayers'));
     this.playerCountText = playerCountItem.querySelector('.header-value');
 
     // Time Info
-    const timeItem = this.createHeaderItem('Time');
+    const timeItem = this.createHeaderItem(this.languageManager.get('headerTime'));
     this.timerText = timeItem.querySelector('.header-value');
     this.timerText.innerText = `${this.timeLimit}s`;
     
@@ -336,7 +346,7 @@ export default class TypingGame extends Phaser.Scene {
 
     this.input = document.createElement('input');
     this.input.type = 'text';
-    this.input.placeholder = 'Type the highlighted word and press space...';
+    this.input.placeholder = this.languageManager.get('typingPlaceholder');
     Object.assign(this.input.style, {
       fontSize: '1.5rem',
       width: '80%',
@@ -432,7 +442,7 @@ export default class TypingGame extends Phaser.Scene {
     
     const startBlock = document.createElement('div');
     startBlock.className = 'block start-finish';
-    startBlock.innerText = 'START';
+    startBlock.innerText = this.languageManager.get('raceStart');
     track.appendChild(startBlock);
 
     this.words.forEach(word => {
@@ -445,7 +455,7 @@ export default class TypingGame extends Phaser.Scene {
 
     const finishBlock = document.createElement('div');
     finishBlock.className = 'block start-finish';
-    finishBlock.innerText = 'FINISH';
+    finishBlock.innerText = this.languageManager.get('raceFinish');
     track.appendChild(finishBlock);
 
     this.container.appendChild(track);
@@ -552,7 +562,7 @@ export default class TypingGame extends Phaser.Scene {
       // Check if the race is finished
       if (this.currentWordIndex === this.words.length) {
         this.input.disabled = true;
-        this.input.placeholder = 'You finished!';
+        this.input.placeholder = this.languageManager.get('typingFinishedPlaceholder');
       }
     
     // --- 2. CORRECT PREFIX ---
@@ -606,7 +616,8 @@ export default class TypingGame extends Phaser.Scene {
 
     let targetEl = (progress >= 1)
       ? allBlocks[allBlocks.length - 1]
-      : allBlocks[targetIndex + 1];
+      // Ensure we don't go out of bounds if targetIndex is the last word
+      : allBlocks[Math.min(targetIndex + 1, allBlocks.length - 1)];
 
     if (targetEl) {
       const trackRect = this.trackElement.getBoundingClientRect();
@@ -616,4 +627,3 @@ export default class TypingGame extends Phaser.Scene {
     }
   }
 }
-
