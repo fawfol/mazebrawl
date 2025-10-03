@@ -123,28 +123,110 @@ export default class TypingGame extends Phaser.Scene {
 		    display: 'flex',
 		    alignItems: 'center',
 		    justifyContent: 'center',
-		    zIndex: 1000
+		    zIndex: 1000,
+            fontFamily: 'sans-serif'
 		});
 
 		const box = document.createElement('div');
 		Object.assign(box.style, {
-		    background: '#222',
+		    background: '#2a2a2e',
+            border: '2px solid #555',
 		    color: '#fff',
-		    padding: '20px',
+		    padding: '25px',
 		    borderRadius: '10px',
 		    textAlign: 'center',
-		    minWidth: '300px'
+		    minWidth: '350px',
+            maxWidth: '90%'
 		});
 
 		const title = document.createElement('h2');
 		title.innerText = this.languageManager.get('finalRankingsTitle');
+        title.style.fontSize = '28px';
+        title.style.margin = '0 0 15px 0';
 		box.appendChild(title);
+        
+        // 
+        // --- NEW: Podium Container ---
+        const podiumContainer = document.createElement('div');
+        Object.assign(podiumContainer.style, {
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-end',
+            gap: '5px',
+            margin: '25px 0',
+            minHeight: '150px'
+        });
 
-		rankedPlayers.forEach(p => {
-		    const pDiv = document.createElement('p');
+        // Define the podium places (2nd, 1st, 3rd) for visual order
+        const places = [
+            { rank: 2, color: '#c0c0c0', height: '100px' }, // Silver
+            { rank: 1, color: '#ffd700', height: '140px' }, // Gold
+            { rank: 3, color: '#cd7f32', height: '75px' }  // Bronze
+        ];
+
+        places.forEach(placeInfo => {
+            const playerRankData = rankedPlayers.find(p => p.place === placeInfo.rank);
+            const podiumStep = document.createElement('div');
+            Object.assign(podiumStep.style, {
+                width: '110px',
+                height: placeInfo.height,
+                background: '#3c3c42',
+                border: `3px solid ${placeInfo.color}`,
+                borderRadius: '5px 5px 0 0',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px',
+                boxSizing: 'border-box'
+            });
+
+            if (playerRankData) {
+                const player = this.players.find(pl => pl.id === playerRankData.id);
+                if (player) {
+                    const placeText = document.createElement('div');
+                    placeText.innerHTML = `${placeInfo.rank === 1 ? '👑' : ''} <span style="font-size: 24px; font-weight: bold;">${playerRankData.place}</span>`;
+                    
+                    const nameText = document.createElement('div');
+                    nameText.innerText = player.name;
+                    nameText.style.fontWeight = 'bold';
+                    nameText.style.marginTop = '8px';
+                    nameText.style.wordBreak = 'break-word';
+
+                    const scoreText = document.createElement('div');
+                    scoreText.innerText = `${playerRankData.score} pts`;
+                    scoreText.style.fontSize = '14px';
+                    scoreText.style.marginTop = '4px';
+
+                    podiumStep.appendChild(placeText);
+                    podiumStep.appendChild(nameText);
+                    podiumStep.appendChild(scoreText);
+                }
+            }
+            podiumContainer.appendChild(podiumStep);
+        });
+        box.appendChild(podiumContainer);
+
+        // --- NEW: List for other players ---
+        if (rankedPlayers.length > 3) {
+            const othersTitle = document.createElement('h3');
+            othersTitle.innerText = 'Remaining Players';
+            Object.assign(othersTitle.style, {
+                margin: '20px 0 10px 0',
+                color: '#ccc',
+                borderTop: '1px solid #444',
+                paddingTop: '15px'
+            });
+            box.appendChild(othersTitle);
+        }
+
+		rankedPlayers.slice(3).forEach(p => {
 		    const player = this.players.find(pl => pl.id === p.id);
-            if (player) { // Check if player exists
-		        pDiv.innerText = `${p.place}. ${player.name} (${p.score} pts)`;
+            if (player) {
+		        const pDiv = document.createElement('p');
+                pDiv.innerText = `${p.place}. ${player.name} (${p.score} pts)`;
+                pDiv.style.margin = '4px 0';
+                pDiv.style.color = '#ddd';
 		        box.appendChild(pDiv);
             }
 		});
@@ -152,18 +234,17 @@ export default class TypingGame extends Phaser.Scene {
 		const exitBtn = document.createElement('button');
 		exitBtn.innerText = this.languageManager.get('exitToGameSelectionButton');
 		Object.assign(exitBtn.style, {
-		    marginTop: '15px',
-		    padding: '8px 16px',
+		    marginTop: '25px',
+		    padding: '12px 24px',
 		    fontSize: '16px',
 		    cursor: 'pointer',
-		    background: '#444',
+		    background: '#4CAF50',
 		    color: 'white',
 		    border: 'none',
 		    borderRadius: '6px'
 		});
 		exitBtn.onclick = () => {
 		    overlay.remove();
-		    //go back to GameScene
 		    this.scene.stop('TypingGame');
 		    this.scene.start('GameScene', {
 		        players: this.players,
