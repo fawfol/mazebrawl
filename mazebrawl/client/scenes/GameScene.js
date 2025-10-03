@@ -168,7 +168,18 @@ export default class GameScene extends Phaser.Scene {
             background: '#2c3e50', padding: '20px', borderRadius: '8px',
             display: 'flex', flexDirection: 'column', gap: '10px'
         });
-        
+		
+		//underdev
+		const devMessage = document.createElement('p');
+        devMessage.innerText = 'Under Development/開発中';
+        Object.assign(devMessage.style, {
+            color: 'red',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            margin: '0 0 10px 0' // Adds some space below the message
+        });
+        modal.appendChild(devMessage);        
+
         const title = document.createElement('h3');
         title.innerText = this.languageManager.get('selectDifficulty');
         title.style.color = 'white';
