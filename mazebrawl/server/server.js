@@ -148,7 +148,7 @@ io.on('connection', (socket) => {
     }
 
     if (playerRoom && playerRoom.leaderId === socket.id) {
-        const gameLang = playerRoom.language || 'en'; // CHANGED: Get language from room object
+        const gameLang = playerRoom.language || 'en'; //get language from room object
         
         if (gameType === 'TypingGame') {
             const preCountdownDuration = 10;
@@ -156,10 +156,13 @@ io.on('connection', (socket) => {
             io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType });
             console.log(`Pre-countdown for TypingRace started in room ${playerRoomId}.`);
 
-            setTimeout(() => {
-                // CHANGED: Pass language to startNewGame
+            //save the timer handle here
+            const gameStartTimer = setTimeout(() => { 
                 activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, gameLang, callback);
+                if (playerRoom) delete playerRoom.gameStartTimer;
             }, preCountdownDuration * 1000);
+
+            playerRoom.gameStartTimer = gameStartTimer;
         } else {
             activeGames.startNewGame(playerRoomId, gameType, playerRoom.players, gameLang, callback);
         }
@@ -168,7 +171,8 @@ io.on('connection', (socket) => {
     }
 });
 	
-  socket.on('leaderSkipTutorial', () => {
+ 
+    socket.on('leaderSkipTutorial', () => {
     let playerRoomId = null;
     let playerRoom = null;
     for (const [roomId, room] of rooms.entries()) {
@@ -179,9 +183,21 @@ io.on('connection', (socket) => {
       }
     }
 
-    if (playerRoom && playerRoom.leaderId === socket.id) {
-        console.log(`Leader in room ${playerRoomId} skipped the tutorial.`);
+    if (playerRoom && playerRoom.leaderId === socket.id && playerRoom.gameStartTimer) {
+        console.log(`Leader in room ${playerRoomId} is skipping the tutorial.`);
+        
+        //cancel the original long timer
+        clearTimeout(playerRoom.gameStartTimer);
+        delete playerRoom.gameStartTimer;
+
+        //tell clients to start their 3-second countdown
         io.to(playerRoomId).emit('tutorialSkipped');
+        
+        //start the game on the server after the same 3 seconds
+        setTimeout(() => {
+            const gameLang = playerRoom.language || 'en';
+            activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, gameLang, () => {});
+        }, 3000); // 3-second delay to match the client's final countdown
     }
   });
 
