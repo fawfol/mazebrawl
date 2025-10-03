@@ -9,7 +9,7 @@ class GameManager {
     this.activeGames = new Map();
   }
 
-  startNewGame(roomId, gameType, players, lang, callback) { // CHANGED: Added lang parameter
+  startNewGame(roomId, gameType, players, lang, callback) {
     if (this.activeGames.has(roomId)) {
       if (callback) callback({ success: false, message: 'A game is already active in this room.' });
       return;
@@ -18,8 +18,12 @@ class GameManager {
     let gameInstance = null;
     switch (gameType) {
       case 'TypingRace':
-        // CHANGED: Pass lang to TypingRace constructor
-        gameInstance = new TypingRace(this.io, roomId, players, lang);
+        //create a callback function to pass to the game instance
+        const onGameEnd = () => {
+          this.endGame(roomId);
+        };
+        //pass the new function as the final argument
+        gameInstance = new TypingRace(this.io, roomId, players, lang, onGameEnd);
         break;
       default:
         if (callback) callback({ success: false, message: 'Invalid game type.' });
@@ -30,6 +34,7 @@ class GameManager {
     console.log(`${gameType} game started in room ${roomId} with language ${lang}`);
     if (callback) callback({ success: true });
   }
+
 
 
   handleGameEvent(playerId, eventType, data) {
