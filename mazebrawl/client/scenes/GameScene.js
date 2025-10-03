@@ -20,7 +20,6 @@ export default class GameScene extends Phaser.Scene {
         console.log('GameScene started');
         document.body.innerHTML = '';
 
-        //instantiate and load language
         this.languageManager = new LanguageManager(this);
         await this.languageManager.loadLanguage(this.language);
 
@@ -40,49 +39,27 @@ export default class GameScene extends Phaser.Scene {
 
         this.domContainer = document.createElement('div');
         this.domContainer.className = 'gamescene-container';
-        this.domContainer.style.justifyContent = 'center'; 
+
+        // --- MODIFIED FOR MOBILE LAYOUT ---
+        //flexbox to control the main layout and ensure it fits the screen height
+        Object.assign(this.domContainer.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100dvh', //dynamic viewport height for mobile
+            padding: '20px',
+            boxSizing: 'border-box'
+        });
         document.body.appendChild(this.domContainer);
-
-        //language Selector for leader
-        if (this.isLeader) {
-            const langContainer = document.createElement('div');
-            Object.assign(langContainer.style, {
-                position: 'absolute', top: '10px', right: '10px', color: 'white'
-            });
-            const langLabel = document.createElement('span');
-            langLabel.innerText = 'LANG/言語: ';
-            this.languageSelector = document.createElement('select');
-            const languages = [
-                { code: 'en', name: 'English' },
-                { code: 'ja', name: '日本語' }
-            ];
-
-            languages.forEach(lang => {
-                const option = document.createElement('option');
-                option.value = lang.code;
-                option.innerText = lang.name;
-                this.languageSelector.appendChild(option);
-            });
-            this.languageSelector.value = this.languageManager.currentLang;
-            this.languageSelector.onchange = async () => {
-                const newLang = this.languageSelector.value;
-                await this.languageManager.loadLanguage(newLang);
-                this.updateUIText();
-                this.socket.emit('changeLanguage', newLang);
-                
-                const selectedOption = this.languageSelector.options[this.languageSelector.selectedIndex];
-                const langName = selectedOption.text;
-                const chatMessage = this.languageManager.get('logLanguageChanged', { lang: langName });
-                this.addChatMessage(chatMessage, '#0030FF');
-            };
-            langContainer.appendChild(langLabel);
-            langContainer.appendChild(this.languageSelector);
-            this.domContainer.appendChild(langContainer);
-        }
-
+        
+        // --- language selector is now part of mainContent so it flows with the layout ---
         const mainContent = document.createElement('div');
         mainContent.className = 'gamescene-main';
         this.domContainer.appendChild(mainContent);
+
+        // ---only create language selector if leader, but don't position absolutely ---
+        if (this.isLeader) {
+            this.renderLanguageSelector(mainContent);
+        }
 
         this.statusText = document.createElement('h1');
         this.statusText.className = 'gamescene-status';
@@ -94,12 +71,11 @@ export default class GameScene extends Phaser.Scene {
         mainContent.appendChild(this.playerCountText);
         this.updatePlayerCount();
 
-        // MODIFIED: Always render the game selection UI for all players
         this.renderGameSelectionUI(mainContent);
-
-        this.renderChatBox(mainContent); 
+        this.renderChatBox(this.domContainer); // append chat to main container
         this.renderBackButton();
 
+        //ocket listeners
         this.socket.off('gameChatMessage');
         this.socket.on('gameChatMessage', (data) => {
             this.addChatMessage(`${data.name}: ${data.text}`);
@@ -123,8 +99,6 @@ export default class GameScene extends Phaser.Scene {
             this.isLeader = this.socket.id === this.leaderId;
             this.updatePlayerCount();
             this.updateUIText();
-            
-            // NEW: Update the UI controls based on the new leader status
             this.updateLeaderControls(); 
         });
 
@@ -134,23 +108,122 @@ export default class GameScene extends Phaser.Scene {
         });
         
         this.updateUIText();
-        // NEW: Set the initial state of the leader controls
         this.updateLeaderControls();
+    }
+
+    // --- method to keep language selector logic clean ---
+    renderLanguageSelector(container) {
+        const langContainer = document.createElement('div');
+        Object.assign(langContainer.style, {
+            marginBottom: '15px',
+            textAlign: 'center'
+        });
+
+        const langLabel = document.createElement('span');
+        langLabel.innerText = 'LANG/言語: ';
+        langLabel.style.color = 'white';
+
+        this.languageSelector = document.createElement('select');
+        const languages = [
+            { code: 'en', name: 'English' },
+            { code: 'ja', name: '日本語' }
+        ];
+
+        languages.forEach(lang => {
+            const option = document.createElement('option');
+            option.value = lang.code;
+            option.innerText = lang.name;
+            this.languageSelector.appendChild(option);
+        });
+        this.languageSelector.value = this.languageManager.currentLang;
+        this.languageSelector.onchange = async () => {
+            const newLang = this.languageSelector.value;
+            await this.languageManager.loadLanguage(newLang);
+            this.updateUIText();
+            this.socket.emit('changeLanguage', newLang);
+            
+            const selectedOption = this.languageSelector.options[this.languageSelector.selectedIndex];
+            const langName = selectedOption.text;
+            const chatMessage = this.languageManager.get('logLanguageChanged', { lang: langName });
+            this.addChatMessage(chatMessage, '#0030FF');
+        };
+
+        langContainer.appendChild(langLabel);
+        langContainer.appendChild(this.languageSelector);
+        container.appendChild(langContainer);
+    }
+
+    // --- creates the difficulty selection modal ---
+    showDifficultyModal() {
+        //create overlay
+        const overlay = document.createElement('div');
+        Object.assign(overlay.style, {
+            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: '1000'
+        });
+
+        //create modal content box
+        const modal = document.createElement('div');
+        modal.className = 'difficulty-modal'; 
+        Object.assign(modal.style, {
+            background: '#2c3e50', padding: '20px', borderRadius: '8px',
+            display: 'flex', flexDirection: 'column', gap: '10px'
+        });
+        
+        const title = document.createElement('h3');
+        title.innerText = this.languageManager.get('selectDifficulty'); //assumes you add this to your language files
+        title.style.color = 'white';
+        title.style.margin = '0 0 10px 0';
+        title.style.textAlign = 'center';
+        modal.appendChild(title);
+
+        //function to create difficulty buttons
+        const createDifficultyButton = (level) => {
+            const btn = document.createElement('button');
+            btn.innerText = level;
+            btn.onclick = () => {
+                this.statusText.innerText = 'Starting Cooperative Drawing...';
+                this.socket.emit('selectGame', 'DrawingGame', { difficulty: level.toLowerCase() }, (response) => {
+                    if (!response.success) {
+                        this.statusText.innerText = response.message;
+                    }
+                });
+                document.body.removeChild(overlay); //close modal on selection
+            };
+            modal.appendChild(btn);
+        };
+
+        ['Easy', 'Hard', 'Pro'].forEach(level => createDifficultyButton(level));
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        //close modal if user clicks outside of it
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        };
     }
 
     updateUIText() {
         this.statusText.innerText = this.isLeader
             ? this.languageManager.get('chooseAGame')
             : this.languageManager.get('waitingForLeader');
+        
+        // --- also update placeholders and buttons on language change ---
+        if (this.chatInput) this.chatInput.placeholder = this.languageManager.get('chatPlaceholder');
+        if (this.sendBtn) this.sendBtn.innerText = this.languageManager.get('sendButton');
+        if (this.backBtn) this.backBtn.innerText = this.languageManager.get('backToLobbyButton');
+        if (this.typingRaceBtn) this.typingRaceBtn.innerText = this.languageManager.get('startTypingRace');
+        if (this.drawGameBtn) this.drawGameBtn.innerText = this.languageManager.get('startDrawingGame');
     }
 
-    // NEW: Method to enable/disable controls based on leader status
     updateLeaderControls() {
         const isNotLeader = !this.isLeader;
         if (this.typingRaceBtn) this.typingRaceBtn.disabled = isNotLeader;
         if (this.drawGameBtn) this.drawGameBtn.disabled = isNotLeader;
-        if (this.difficultySelector) this.difficultySelector.disabled = isNotLeader;
-        // Also handle the language selector if it exists
         if (this.languageSelector) this.languageSelector.disabled = isNotLeader;
     }
 
@@ -165,49 +238,24 @@ export default class GameScene extends Phaser.Scene {
         const gameList = document.createElement('div');
         gameList.className = 'gamescene-selection';
 
-        // MODIFIED: Store buttons as class properties (`this.typingRaceBtn`)
         this.typingRaceBtn = document.createElement('button');
         this.typingRaceBtn.innerText = this.languageManager.get('startTypingRace');
         this.typingRaceBtn.onclick = () => {
             this.statusText.innerText = 'Starting Typing Race...';
             this.socket.emit('selectGame', 'TypingGame', (response) => {
-                if (!response.success) {
-                    this.statusText.innerText = response.message;
-                }
+                if (!response.success) this.statusText.innerText = response.message;
             });
         };
         gameList.appendChild(this.typingRaceBtn);
         
-        const drawGameContainer = document.createElement('div');
-        drawGameContainer.style.display = 'flex';
-        drawGameContainer.style.flexDirection = 'column';
-        drawGameContainer.style.gap = '8px';
-        
-        // MODIFIED: Store buttons as class properties
         this.drawGameBtn = document.createElement('button');
         this.drawGameBtn.innerText = this.languageManager.get('startDrawingGame');
         
-        this.difficultySelector = document.createElement('select');
-        ['Easy', 'Hard', 'Pro'].forEach(level => {
-            const option = document.createElement('option');
-            option.value = level.toLowerCase();
-            option.innerText = level;
-            this.difficultySelector.appendChild(option);
-        });
-
+        // ---onclick now opens the modal ---
         this.drawGameBtn.onclick = () => {
-            this.statusText.innerText = 'Starting Cooperative Drawing...';
-            const difficulty = this.difficultySelector.value;
-            this.socket.emit('selectGame', 'DrawingGame', { difficulty }, (response) => {
-                if (!response.success) {
-                    this.statusText.innerText = response.message;
-                }
-            });
+            this.showDifficultyModal();
         };
-        
-        drawGameContainer.appendChild(this.drawGameBtn);
-        drawGameContainer.appendChild(this.difficultySelector);
-        gameList.appendChild(drawGameContainer);
+        gameList.appendChild(this.drawGameBtn);
 
         container.appendChild(gameList);
 
@@ -215,35 +263,51 @@ export default class GameScene extends Phaser.Scene {
         soonBtn.innerText = this.languageManager.get('moreGamesSoon');
         soonBtn.disabled = true;
         gameList.appendChild(soonBtn);
-
-        container.appendChild(gameList);
     }
     
     renderChatBox(container) {
         const chatWrapper = document.createElement('div');
         chatWrapper.className = 'gamescene-chat-wrapper';
-        chatWrapper.style.marginTop = '20px';
+
+        // --- MODIFIED FOR MOBILE LAYOUT ---
+        //this wrapper will grow to fill available space
+        Object.assign(chatWrapper.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            flex: '1', //ths the magic property that makes it grow
+            minHeight: '0', //important for flex children in some browsers
+            marginTop: '20px'
+        });
 
         this.chatContainer = document.createElement('div');
         this.chatContainer.className = 'chat-container';
-        this.chatContainer.style.height = '200px'; 
+        
+        // --- MODIFIED FOR MOBILE LAYOUT ---
+        //container will be scrollable
+        Object.assign(this.chatContainer.style, {
+            flex: '1', //let it take all the space inside the wrapper
+            overflowY: 'auto', //add a scrollbar if content overflows
+            marginBottom: '10px'
+        });
         chatWrapper.appendChild(this.chatContainer);
 
         const inputWrapper = document.createElement('div');
         inputWrapper.className = 'chat-input-wrapper';
+        inputWrapper.style.display = 'flex';
 
         this.chatInput = document.createElement('input');
         this.chatInput.type = 'text';
         this.chatInput.placeholder = this.languageManager.get('chatPlaceholder');
         this.chatInput.className = 'chat-input';
+        this.chatInput.style.flex = '1';
 
-        const sendBtn = document.createElement('button');
-        sendBtn.innerText = this.languageManager.get('sendButton');
-        sendBtn.className = 'chat-send-btn';
-        sendBtn.onclick = () => this.sendChatMessage();
+        this.sendBtn = document.createElement('button');
+        this.sendBtn.innerText = this.languageManager.get('sendButton');
+        this.sendBtn.className = 'chat-send-btn';
+        this.sendBtn.onclick = () => this.sendChatMessage();
 
         inputWrapper.appendChild(this.chatInput);
-        inputWrapper.appendChild(sendBtn);
+        inputWrapper.appendChild(this.sendBtn);
         chatWrapper.appendChild(inputWrapper);
         
         container.appendChild(chatWrapper); 
@@ -255,30 +319,30 @@ export default class GameScene extends Phaser.Scene {
 
     renderBackButton() {
         const footer = document.createElement('div');
+        //removed absolute positioning,now part of the flex flow
         Object.assign(footer.style, {
-            position: 'absolute',
-            bottom: '20px',
             width: '100%',
-            textAlign: 'center'
+            textAlign: 'center',
+            marginTop: '20px' //some space from the chat box
         });
 
-        const backBtn = document.createElement('button');
-        backBtn.innerText = this.languageManager.get('backToLobbyButton');
-        backBtn.onclick = () => {
-            backBtn.disabled = true;
-            backBtn.innerText = this.languageManager.get('leavingButton');
+        this.backBtn = document.createElement('button');
+        this.backBtn.innerText = this.languageManager.get('backToLobbyButton');
+        this.backBtn.onclick = () => {
+            this.backBtn.disabled = true;
+            this.backBtn.innerText = this.languageManager.get('leavingButton');
             this.socket.emit('leaveRoom', (response) => {
                 if (response.success) {
                     this.scene.stop('GameScene');
                     this.scene.start('LobbyScene');
                 } else {
-                    backBtn.disabled = false;
-                    backBtn.innerText = this.languageManager.get('backToLobbyButton');
+                    this.backBtn.disabled = false;
+                    this.backBtn.innerText = this.languageManager.get('backToLobbyButton');
                 }
             });
         };
 
-        footer.appendChild(backBtn);
+        footer.appendChild(this.backBtn);
         this.domContainer.appendChild(footer);
     }
 
@@ -289,7 +353,7 @@ export default class GameScene extends Phaser.Scene {
         this.chatInput.value = '';
     }
 
-    addChatMessage(msg, color = '#000') {
+    addChatMessage(msg, color = 'white') { //changed default to white for dark theme
         const p = document.createElement('p');
         p.innerText = msg;
         p.style.color = color;
