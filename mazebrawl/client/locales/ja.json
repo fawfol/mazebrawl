@@ -14,6 +14,7 @@
   "languageLabel": "言語: ",
   "playersCount": "プレイヤー: {count}/{max}",
   "startTypingRace": "1. タイピングレース",
+  "startDrawingGame": "2. 協力お絵かき",
   "moreGamesSoon": "他のゲームは近日公開...",
   "chatPlaceholder": "他の人とチャット...",
   "sendButton": "送信",

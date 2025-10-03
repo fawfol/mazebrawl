@@ -1,6 +1,7 @@
 // mazebrawl/server/games/GameManager.js
 
 const TypingRace = require('./typingRace.js');
+const CooperativeDrawing = require('./CooperativeDrawing.js');
 
 class GameManager {
   constructor(io, rooms) {
@@ -9,21 +10,21 @@ class GameManager {
     this.activeGames = new Map();
   }
 
-  startNewGame(roomId, gameType, players, lang, callback) {
+  startNewGame(roomId, gameType, players, lang, callback, difficulty = 'easy') {
     if (this.activeGames.has(roomId)) {
       if (callback) callback({ success: false, message: 'A game is already active in this room.' });
       return;
     }
 
+    const onGameEnd = () => this.endGame(roomId);
     let gameInstance = null;
+
     switch (gameType) {
       case 'TypingRace':
-        //create a callback function to pass to the game instance
-        const onGameEnd = () => {
-          this.endGame(roomId);
-        };
-        //pass the new function as the final argument
         gameInstance = new TypingRace(this.io, roomId, players, lang, onGameEnd);
+        break;
+      case 'CooperativeDrawing':
+        gameInstance = new CooperativeDrawing(this.io, roomId, players, lang, onGameEnd, difficulty);
         break;
       default:
         if (callback) callback({ success: false, message: 'Invalid game type.' });
@@ -31,12 +32,11 @@ class GameManager {
     }
 
     this.activeGames.set(roomId, gameInstance);
-    console.log(`${gameType} game started in room ${roomId} with language ${lang}`);
+    console.log(`${gameType} game started in room ${roomId}`);
     if (callback) callback({ success: true });
   }
 
-
-
+  // --- CORRECTED AND MERGED FUNCTION ---
   handleGameEvent(playerId, eventType, data) {
     const roomEntry = Array.from(this.rooms.entries()).find(([roomId, room]) =>
       room.players.some(p => p.id === playerId)
@@ -52,6 +52,16 @@ class GameManager {
       case 'typingProgress':
         if (gameInstance.updateProgress) {
           gameInstance.updateProgress(playerId, data);
+        }
+        break;
+      case 'drawingAction':
+        if (gameInstance.handleDrawing) {
+          gameInstance.handleDrawing(playerId, data);
+        }
+        break;
+      case 'submitDrawing':
+        if (gameInstance.handleSubmit) {
+          gameInstance.handleSubmit(data);
         }
         break;
       default:

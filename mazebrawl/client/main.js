@@ -3,6 +3,7 @@
 import LobbyScene from './scenes/LobbyScene.js';
 import GameScene from './scenes/GameScene.js';
 import TypingGame from './scenes/TypingGame.js';
+import DrawingGameScene from './scenes/DrawingGameScene.js';
 import LanguageManager from './LanguageManager.js';
 
 //determine server URL dynamically
@@ -16,7 +17,7 @@ const config = {
   width: window.innerWidth,
   height: window.innerHeight *0.8,
   backgroundColor: '#111111',
-  scene: [LobbyScene, GameScene, TypingGame],
+  scene: [LobbyScene, GameScene, TypingGame, DrawingGameScene],
   physics: {
     default: 'arcade',
     arcade: { debug: false }

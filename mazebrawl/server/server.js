@@ -5,6 +5,7 @@ const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
 const GameManager = require('./games/GameManager.js');
+const CooperativeDrawing = require('./games/CooperativeDrawing.js');
 
 const app = express();
 const server = http.createServer(app);
@@ -39,7 +40,7 @@ function broadcastRoomUpdate(roomId) {
     leaderId: room.leaderId,
     players: room.players,
     maxPlayers: 7,
-    language: room.language //broadcast current room language
+    language: room.language
   });
 }
 
@@ -48,50 +49,41 @@ io.on('connection', (socket) => {
   console.log(`New connection: ${socket.id}`);
 
   // --- ROOM EVENTS ---
-  socket.on('createRoom', (playerName, lang, callback) => { //added lang parameter
+  socket.on('createRoom', (playerName, lang, callback) => {
     if (typeof callback !== 'function') return;
-
     let roomId;
     do { roomId = generateRoomID(); } while (rooms.has(roomId));
-
     const room = {
       players: [{ id: socket.id, name: playerName, ready: false }],
       leaderId: socket.id,
-      language: lang || 'en' //store language in room object
+      language: lang || 'en'
     };
     rooms.set(roomId, room);
-
     socket.join(roomId);
     console.log(`Room created: ${roomId} by ${playerName} with language ${lang}`);
     socket.emit('roomCreated', roomId);
     broadcastRoomUpdate(roomId);
-
     callback({ success: true, roomId, leaderId: socket.id, players: room.players, language: room.language });
   });
 
   socket.on('joinRoom', (roomId, playerName, callback) => {
     if (typeof callback !== 'function') return;
-
     const room = rooms.get(roomId);
     if (!room) return callback({ success: false, message: 'Room does not exist.' });
     if (room.players.length >= 7) return callback({ success: false, message: 'Room is full.' });
-
     room.players.push({ id: socket.id, name: playerName, ready: false });
     socket.join(roomId);
-
     io.to(roomId).emit('playerJoined', playerName);
     broadcastRoomUpdate(roomId);
-
     callback({ success: true, roomId, leaderId: room.leaderId, players: room.players });
     console.log(`${playerName} joined room ${roomId}`);
   });
 
-  // ADDED: New listener for the leader changing the language
   socket.on('changeLanguage', (newLang) => {
     for (const [roomId, room] of rooms.entries()) {
         if (room.leaderId === socket.id) {
             room.language = newLang;
-            broadcastRoomUpdate(roomId); //notify all players of the language change
+            broadcastRoomUpdate(roomId);
             console.log(`Language in room ${roomId} changed to ${newLang}`);
             break;
         }
@@ -114,10 +106,8 @@ io.on('connection', (socket) => {
     for (const [roomId, room] of rooms.entries()) {
       if (room.players.some(p => p.id === socket.id)) {
         if (room.leaderId !== socket.id) return;
-
         const minPlayers = 2;
         const othersReady = room.players.filter(p => p.id !== socket.id).every(p => p.ready);
-
         if (room.players.length < minPlayers) {
           if (callback) callback({ success: false, message: 'Not enough players (min 2)' });
           return;
@@ -126,7 +116,6 @@ io.on('connection', (socket) => {
           if (callback) callback({ success: false, message: 'All players must be ready' });
           return;
         }
-
         io.to(roomId).emit('gameHasStarted');
         console.log(`Session started in room ${roomId}. Moving to GameScene.`);
         if (callback) callback({ success: true });
@@ -134,45 +123,53 @@ io.on('connection', (socket) => {
       }
     }
   });
+  
+  // --- SINGLE CORRECT 'selectGame' HANDLER ---
+  // This is the NEW code to paste in
+	socket.on('selectGame', (gameType, options, callback) => {
+		let playerRoomId = null;
+		let playerRoom = null;
+		for (const [roomId, room] of rooms.entries()) {
+		    if (room.players.some(p => p.id === socket.id)) {
+		        playerRoomId = roomId;
+		        playerRoom = room;
+		        break;
+		    }
+		}
 
-  // --- GAME EVENTS (Delegated to GameManager) ---
-  socket.on('selectGame', (gameType, callback) => {
-    let playerRoomId = null;
-    let playerRoom = null;
-    for (const [roomId, room] of rooms.entries()) {
-        if (room.players.some(p => p.id === socket.id)) {
-            playerRoomId = roomId;
-            playerRoom = room;
-            break;
-        }
-    }
+		if (playerRoom && playerRoom.leaderId === socket.id) {
+		    const gameLang = playerRoom.language || 'en';
+		    
+		    if (gameType === 'TypingGame') {
+		        const preCountdownDuration = 10;
+		        io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType });
+		        const gameStartTimer = setTimeout(() => {
+		            activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, gameLang, callback);
+		            if (playerRoom) delete playerRoom.gameStartTimer;
+		        }, preCountdownDuration * 1000);
+		        playerRoom.gameStartTimer = gameStartTimer;
 
-    if (playerRoom && playerRoom.leaderId === socket.id) {
-        const gameLang = playerRoom.language || 'en'; //get language from room object
-        
-        if (gameType === 'TypingGame') {
-            const preCountdownDuration = 10;
-            
-            io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType });
-            console.log(`Pre-countdown for TypingRace started in room ${playerRoomId}.`);
+		    } else if (gameType === 'DrawingGame') {
+		          const preCountdownDuration = 5; // Give 5 seconds to show "Game Starting"
+		          // We tell the client to switch to the 'DrawingGameScene'
+		          io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType: 'DrawingGameScene' });
+		          
+		          // We wait for the countdown duration before actually creating the game instance
+		          const gameStartTimer = setTimeout(() => {
+		              activeGames.startNewGame(playerRoomId, 'CooperativeDrawing', playerRoom.players, gameLang, callback, options.difficulty);
+		              if (playerRoom) delete playerRoom.gameStartTimer;
+		          }, preCountdownDuration * 1000);
+		          playerRoom.gameStartTimer = gameStartTimer;
 
-            //save the timer handle here
-            const gameStartTimer = setTimeout(() => { 
-                activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, gameLang, callback);
-                if (playerRoom) delete playerRoom.gameStartTimer;
-            }, preCountdownDuration * 1000);
-
-            playerRoom.gameStartTimer = gameStartTimer;
-        } else {
-            activeGames.startNewGame(playerRoomId, gameType, playerRoom.players, gameLang, callback);
-        }
-    } else {
-        if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
-    }
-});
-	
- 
-    socket.on('leaderSkipTutorial', () => {
+		    } else {
+		          if (callback) callback({ success: false, message: 'Invalid game type selected.' });
+		    }
+		} else {
+		    if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
+		}
+	});
+  
+  socket.on('leaderSkipTutorial', () => {
     let playerRoomId = null;
     let playerRoom = null;
     for (const [roomId, room] of rooms.entries()) {
@@ -182,27 +179,28 @@ io.on('connection', (socket) => {
         break;
       }
     }
-
     if (playerRoom && playerRoom.leaderId === socket.id && playerRoom.gameStartTimer) {
         console.log(`Leader in room ${playerRoomId} is skipping the tutorial.`);
-        
-        //cancel the original long timer
         clearTimeout(playerRoom.gameStartTimer);
         delete playerRoom.gameStartTimer;
-
-        //tell clients to start their 3-second countdown
         io.to(playerRoomId).emit('tutorialSkipped');
-        
-        //start the game on the server after the same 3 seconds
         setTimeout(() => {
             const gameLang = playerRoom.language || 'en';
             activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, gameLang, () => {});
-        }, 3000); // 3-second delay to match the client's final countdown
+        }, 3000);
     }
   });
 
   socket.on('typingProgress', (progress) => {
     activeGames.handleGameEvent(socket.id, 'typingProgress', progress);
+  });
+  
+  socket.on('drawingAction', (canvasData) => {
+    activeGames.handleGameEvent(socket.id, 'drawingAction', canvasData);
+  });
+
+  socket.on('submitDrawing', (finalImage) => {
+    activeGames.handleGameEvent(socket.id, 'submitDrawing', finalImage);
   });
 
   socket.on('leaveRoom', (callback) => {
@@ -212,7 +210,6 @@ io.on('connection', (socket) => {
       if (index !== -1) {
         const leftPlayer = room.players[index].name;
         room.players.splice(index, 1);
-
         if (room.leaderId === socket.id) {
           room.leaderId = room.players.length > 0 ? room.players[0].id : null;
           if (room.leaderId) {
@@ -242,16 +239,11 @@ io.on('connection', (socket) => {
         break;
       }
     }
-
     if (playerRoomId) {
       const room = rooms.get(playerRoomId);
       const player = room.players.find(p => p.id === socket.id);
-
       if (player) {
-        io.to(playerRoomId).emit('gameChatMessage', {
-          name: player.name,
-          text: msg
-        });
+        io.to(playerRoomId).emit('gameChatMessage', { name: player.name, text: msg });
       }
     }
   });
@@ -263,7 +255,6 @@ io.on('connection', (socket) => {
       if (index !== -1) {
         const leftPlayer = room.players[index].name;
         room.players.splice(index, 1);
-
         if (room.leaderId === socket.id) {
           room.leaderId = room.players.length > 0 ? room.players[0].id : null;
           if (room.leaderId) {
@@ -285,3 +276,4 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
