@@ -51,5 +51,10 @@
   "logPlayerLeft": "{name} left the room",
   "logNewLeader": "Leader left — new leader is {name}",
   "logYouLeft": "You left the room.",
-  "logLanguageChanged": "The leader changed the language to {lang}."
+  "logLanguageChanged": "The leader changed the language to {lang}.",
+  "selectDifficulty" : "DIFFICULTY LEVEL",
+  "difficultyEasy": "Easy",
+  "difficultyHard": "Hard",
+  "difficultyPro": "Pro"
 }
+

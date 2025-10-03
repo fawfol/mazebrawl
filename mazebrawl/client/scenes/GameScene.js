@@ -155,7 +155,6 @@ export default class GameScene extends Phaser.Scene {
 
     // --- creates the difficulty selection modal ---
     showDifficultyModal() {
-        //create overlay
         const overlay = document.createElement('div');
         Object.assign(overlay.style, {
             position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
@@ -163,43 +162,48 @@ export default class GameScene extends Phaser.Scene {
             alignItems: 'center', justifyContent: 'center', zIndex: '1000'
         });
 
-        //create modal content box
         const modal = document.createElement('div');
-        modal.className = 'difficulty-modal'; 
+        modal.className = 'difficulty-modal';
         Object.assign(modal.style, {
             background: '#2c3e50', padding: '20px', borderRadius: '8px',
             display: 'flex', flexDirection: 'column', gap: '10px'
         });
         
         const title = document.createElement('h3');
-        title.innerText = this.languageManager.get('selectDifficulty'); //assumes you add this to your language files
+        title.innerText = this.languageManager.get('selectDifficulty');
         title.style.color = 'white';
         title.style.margin = '0 0 10px 0';
         title.style.textAlign = 'center';
         modal.appendChild(title);
 
-        //function to create difficulty buttons
-        const createDifficultyButton = (level) => {
+        // Define difficulties with their server value and language key
+        const difficulties = [
+            { value: 'easy', langKey: 'difficultyEasy' },
+            { value: 'hard', langKey: 'difficultyHard' },
+            { value: 'pro',  langKey: 'difficultyPro' }
+        ];
+
+        // Create buttons using the language manager
+        difficulties.forEach(difficulty => {
             const btn = document.createElement('button');
-            btn.innerText = level;
+            // Fetch the translated text from the language manager
+            btn.innerText = this.languageManager.get(difficulty.langKey);
             btn.onclick = () => {
                 this.statusText.innerText = 'Starting Cooperative Drawing...';
-                this.socket.emit('selectGame', 'DrawingGame', { difficulty: level.toLowerCase() }, (response) => {
+                // Send the consistent 'value' to the server
+                this.socket.emit('selectGame', 'DrawingGame', { difficulty: difficulty.value }, (response) => {
                     if (!response.success) {
                         this.statusText.innerText = response.message;
                     }
                 });
-                document.body.removeChild(overlay); //close modal on selection
+                document.body.removeChild(overlay);
             };
             modal.appendChild(btn);
-        };
-
-        ['Easy', 'Hard', 'Pro'].forEach(level => createDifficultyButton(level));
+        });
         
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
 
-        //close modal if user clicks outside of it
         overlay.onclick = (e) => {
             if (e.target === overlay) {
                 document.body.removeChild(overlay);

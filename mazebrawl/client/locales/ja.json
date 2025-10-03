@@ -51,5 +51,9 @@
   "logPlayerLeft": "{name}がルームを退出しました",
   "logNewLeader": "リーダーが退出しました — 新しいリーダーは{name}です",
   "logYouLeft": "ルームを退出しました。",
-  "logLanguageChanged": "リーダーが言語を{lang}に変更しました。"
+  "logLanguageChanged": "リーダーが言語を{lang}に変更しました。",
+  "selectDifficulty" : "難易度",
+  "difficultyEasy": "簡単",
+  "difficultyHard": "難しい",
+  "difficultyPro": "プロ"
 }
