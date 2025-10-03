@@ -54,52 +54,124 @@ export default class TypingGame extends Phaser.Scene {
   }
 
 	//round end modal
-	showRoundResults(scores) {
+	showRoundResults(scores, finishOrder) {
 		const overlay = document.createElement('div');
 		Object.assign(overlay.style, {
 		    position: 'fixed', top: '0', left: '0',
 		    width: '100%', height: '100%',
-		    background: 'rgba(0,0,0,0.7)',
+		    background: 'rgba(0,0,0,0.75)',
 		    display: 'flex',
 		    alignItems: 'center',
 		    justifyContent: 'center',
-		    zIndex: 1000
+		    zIndex: 1000,
+            fontFamily: 'sans-serif'
 		});
 
 		const box = document.createElement('div');
 		Object.assign(box.style, {
-		    background: '#222',
+		    background: '#2a2a2e',
+            border: '2px solid #555',
 		    color: '#fff',
 		    padding: '20px',
 		    borderRadius: '10px',
 		    textAlign: 'center',
-		    minWidth: '300px'
+		    width: '380px',
+            maxWidth: '90%'
 		});
 
 		const title = document.createElement('h2');
 		title.innerText = this.languageManager.get('roundResultsTitle', { round: this.round });
+        title.style.margin = '0 0 15px 0';
 		box.appendChild(title);
 
-		const list = document.createElement('div');
-		Object.entries(scores).forEach(([id, score]) => {
-		    const p = document.createElement('p');
-		    const player = this.players.find(pl => pl.id === id);
-            if (player) { // Check if player exists before showing score
-		        p.innerText = `${player.name}: ${score}`;
-		        list.appendChild(p);
+        //REsults Container ---
+        const resultsContainer = document.createElement('div');
+        Object.assign(resultsContainer.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+        });
+
+        //using the finishOrder to display round rankings
+        finishOrder.forEach((id, index) => {
+            const player = this.players.find(pl => pl.id === id);
+            if (!player) return;
+
+            const place = index + 1;
+            let pointsGained = 0;
+            let medal = '';
+
+            if (place === 1) { pointsGained = 3; medal = '🥇'; }
+            else if (place === 2) { pointsGained = 2; medal = '🥈'; }
+            else if (place === 3) { pointsGained = 1; medal = '🥉'; }
+
+            const row = document.createElement('div');
+            Object.assign(row.style, {
+                display: 'grid',
+                gridTemplateColumns: '1fr 3fr 1fr',
+                alignItems: 'center',
+                padding: '8px',
+                background: '#3c3c42',
+                borderRadius: '5px'
+            });
+
+            const placeDiv = document.createElement('div');
+            placeDiv.innerHTML = `${medal} ${place}`;
+            placeDiv.style.fontWeight = 'bold';
+            placeDiv.style.textAlign = 'left';
+
+            const nameDiv = document.createElement('div');
+            nameDiv.innerText = player.name;
+            
+            const pointsDiv = document.createElement('div');
+            pointsDiv.innerText = `+${pointsGained} pts`;
+            pointsDiv.style.color = pointsGained > 0 ? '#4CAF50' : '#aaa';
+            pointsDiv.style.fontWeight = 'bold';
+            pointsDiv.style.textAlign = 'right';
+
+            row.appendChild(placeDiv);
+            row.appendChild(nameDiv);
+            row.appendChild(pointsDiv);
+            resultsContainer.appendChild(row);
+        });
+        box.appendChild(resultsContainer);
+        
+        // --- Total Scores Section ---
+        const totalTitle = document.createElement('h4');
+        totalTitle.innerText = 'Total Score';
+        Object.assign(totalTitle.style, {
+            marginTop: '20px',
+            marginBottom: '10px',
+            borderTop: '1px solid #555',
+            paddingTop: '15px'
+        });
+        box.appendChild(totalTitle);
+        
+        //sort players by total score for the summary list
+        const sortedPlayerIds = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
+        sortedPlayerIds.forEach(id => {
+            const player = this.players.find(pl => pl.id === id);
+            if (player) {
+                const scoreP = document.createElement('p');
+                scoreP.innerText = `${player.name}: ${scores[id]} pts`;
+                scoreP.style.margin = '4px 0';
+                box.appendChild(scoreP);
             }
-		});
-		box.appendChild(list);
+        });
+
 
 		const countdownText = document.createElement('p');
-		countdownText.style.marginTop = '10px';
-		countdownText.style.fontSize = '18px';
+		Object.assign(countdownText.style, {
+            marginTop: '20px',
+            fontSize: '18px',
+            color: '#ffc107'
+        });
 		box.appendChild(countdownText);
 
 		overlay.appendChild(box);
 		document.body.appendChild(overlay);
 
-		// Countdown
+		//countdown logic remains the same
 		let countdown = 8;
 		countdownText.innerText = this.languageManager.get('nextRoundIn', { countdown: countdown });
 		const interval = setInterval(() => {
@@ -453,7 +525,7 @@ export default class TypingGame extends Phaser.Scene {
 	this.socket.off('roundEnded');
 	this.socket.on('roundEnded', ({ scores, finishOrder }) => {
 	  clearInterval(this.countdownTimer);
-	  this.showRoundResults(scores);
+	  this.showRoundResults(scores, finishOrder);
 	});
 
     this.socket.off('gameEnded');
