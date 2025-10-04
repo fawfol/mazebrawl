@@ -75,7 +75,7 @@ export default class TypingGame extends Phaser.Scene {
 		    padding: '20px',
 		    borderRadius: '10px',
 		    textAlign: 'center',
-		    width: '380px',
+		    minWidth: '350px', //minWidth instead of a fixed width
             maxWidth: '90%'
 		});
 
@@ -105,36 +105,68 @@ export default class TypingGame extends Phaser.Scene {
             else if (place === 2) { pointsGained = 2; medal = '🥈'; }
             else if (place === 3) { pointsGained = 1; medal = '🥉'; }
 
+            //main container for a single player's result row
             const row = document.createElement('div');
             Object.assign(row.style, {
-                display: 'grid',
-                gridTemplateColumns: '1fr 3fr 1fr',
+                display: 'flex',
+                justifyContent: 'space-between', //pushes left and right content apart
                 alignItems: 'center',
-                padding: '8px',
+                padding: '12px',
                 background: '#3c3c42',
                 borderRadius: '5px'
             });
 
+            //new container for the left side (Place + Name)
+            const leftContainer = document.createElement('div');
+             Object.assign(leftContainer.style, {
+                display: 'flex',
+                flexDirection: 'column', //dtacks place and name vertically
+                alignItems: 'flex-start',
+                textAlign: 'left',
+                gap: '4px'
+            });
+
+            //styled Place/Medal element
             const placeDiv = document.createElement('div');
             placeDiv.innerHTML = `${medal} ${place}`;
-            placeDiv.style.fontWeight = 'bold';
-            placeDiv.style.textAlign = 'left';
+            Object.assign(placeDiv.style, {
+                fontWeight: 'bold',
+                fontSize: '1.1em',
+                color: '#ddd'
+            });
 
+            //styled Name element
             const nameDiv = document.createElement('div');
             nameDiv.innerText = player.name;
+            Object.assign(nameDiv.style, {
+                fontSize: '1.3em',
+                fontWeight: 'bold',
+                wordBreak: 'break-word' //important for long names
+            });
             
+            //styled Points element (now on the right)
             const pointsDiv = document.createElement('div');
             pointsDiv.innerText = `+${pointsGained} pts`;
-            pointsDiv.style.color = pointsGained > 0 ? '#4CAF50' : '#aaa';
-            pointsDiv.style.fontWeight = 'bold';
-            pointsDiv.style.textAlign = 'right';
+            Object.assign(pointsDiv.style, {
+                color: pointsGained > 0 ? '#4CAF50' : '#aaa',
+                fontWeight: 'bold',
+                fontSize: '1.5em',
+                textAlign: 'right'
+            });
+            
+            //assemble the new structure
+            leftContainer.appendChild(placeDiv);
+            leftContainer.appendChild(nameDiv);
 
-            row.appendChild(placeDiv);
-            row.appendChild(nameDiv);
-            row.appendChild(pointsDiv);
+            row.appendChild(leftContainer);
+            if (pointsGained > 0) {
+                 row.appendChild(pointsDiv);
+            }
+
             resultsContainer.appendChild(row);
         });
         box.appendChild(resultsContainer);
+        
         
         // --- Total Scores Section ---
         const totalTitle = document.createElement('h4');
