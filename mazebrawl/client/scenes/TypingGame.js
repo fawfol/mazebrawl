@@ -75,7 +75,7 @@ export default class TypingGame extends Phaser.Scene {
 		    padding: '20px',
 		    borderRadius: '10px',
 		    textAlign: 'center',
-		    minWidth: '350px', //minWidth instead of a fixed width
+		    minWidth: '350px',
             maxWidth: '90%'
 		});
 
@@ -84,7 +84,6 @@ export default class TypingGame extends Phaser.Scene {
         title.style.margin = '0 0 15px 0';
 		box.appendChild(title);
 
-        //REsults Container ---
         const resultsContainer = document.createElement('div');
         Object.assign(resultsContainer.style, {
             display: 'flex',
@@ -92,9 +91,7 @@ export default class TypingGame extends Phaser.Scene {
             gap: '8px'
         });
 
-        //using the finishOrder to display round rankings
-        finishOrder.forEach((id, index) => {
-            const player = this.players.find(pl => pl.id === id);
+        finishOrder.forEach((player, index) => {
             if (!player) return;
 
             const place = index + 1;
@@ -105,92 +102,127 @@ export default class TypingGame extends Phaser.Scene {
             else if (place === 2) { pointsGained = 2; medal = '🥈'; }
             else if (place === 3) { pointsGained = 1; medal = '🥉'; }
 
-            //main container for a single player's result row
             const row = document.createElement('div');
             Object.assign(row.style, {
-                display: 'flex',
-                justifyContent: 'space-between', //pushes left and right content apart
+                display: 'grid',
+                gridTemplateColumns: '50px 1fr 60px', // Medal | Name+Total | Points Gained
                 alignItems: 'center',
-                padding: '12px',
+                padding: '12px 16px',
                 background: '#3c3c42',
-                borderRadius: '5px'
+                borderRadius: '8px',
+                gap: '10px',
+                fontSize: '1.1em'
             });
 
-            //new container for the left side (Place + Name)
-            const leftContainer = document.createElement('div');
-             Object.assign(leftContainer.style, {
-                display: 'flex',
-                flexDirection: 'column', //dtacks place and name vertically
-                alignItems: 'flex-start',
-                textAlign: 'left',
-                gap: '4px'
-            });
-
-            //styled Place/Medal element
+            // --- Medal/Placement ---
             const placeDiv = document.createElement('div');
             placeDiv.innerHTML = `${medal} ${place}`;
             Object.assign(placeDiv.style, {
                 fontWeight: 'bold',
                 fontSize: '1.1em',
-                color: '#ddd'
+                color: '#ddd',
+                textAlign: 'center'
+            });
+            row.appendChild(placeDiv);
+
+            // --- Player Info (Name + Total Score) ---
+            const infoContainer = document.createElement('div');
+            Object.assign(infoContainer.style, {
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                textAlign: 'left',
+                gap: '2px'
             });
 
-            //styled Name element
             const nameDiv = document.createElement('div');
             nameDiv.innerText = player.name;
             Object.assign(nameDiv.style, {
                 fontSize: '1.3em',
                 fontWeight: 'bold',
-                wordBreak: 'break-word' //important for long names
+                wordBreak: 'break-word',
+                color: '#fff'
             });
-            
-            //styled Points element (now on the right)
-            const pointsDiv = document.createElement('div');
-            pointsDiv.innerText = `+${pointsGained} pts`;
-            Object.assign(pointsDiv.style, {
-                color: pointsGained > 0 ? '#4CAF50' : '#aaa',
-                fontWeight: 'bold',
-                fontSize: '1.5em',
-                textAlign: 'right'
-            });
-            
-            //assemble the new structure
-            leftContainer.appendChild(placeDiv);
-            leftContainer.appendChild(nameDiv);
 
-            row.appendChild(leftContainer);
+            const totalDiv = document.createElement('div');
+            // --- I'VE COMPLETED THIS PART FOR YOU ---
+            totalDiv.innerText = this.languageManager.get('totalScoreLabel', { score: scores[player.id] });
+            Object.assign(totalDiv.style, {
+                fontSize: '0.9em',
+                opacity: 1, // Make it visible
+                color: '#bbb'
+            });
+
+            infoContainer.appendChild(nameDiv);
+            infoContainer.appendChild(totalDiv);
+            row.appendChild(infoContainer);
+
+            // --- Points Gained This Round ---
             if (pointsGained > 0) {
-                 row.appendChild(pointsDiv);
+                const pointsDiv = document.createElement('div');
+                pointsDiv.innerText = `+${pointsGained}`;
+                Object.assign(pointsDiv.style, {
+                    color: '#4CAF50',
+                    fontWeight: 'bold',
+                    fontSize: '1.3em',
+                    textAlign: 'right'
+                });
+                row.appendChild(pointsDiv);
+            } else {
+                // Add an empty div to keep the grid aligned correctly
+                const emptyDiv = document.createElement('div');
+                row.appendChild(emptyDiv);
             }
 
             resultsContainer.appendChild(row);
         });
         box.appendChild(resultsContainer);
         
-        
-        // --- Total Scores Section ---
-        const totalTitle = document.createElement('h4');
-        totalTitle.innerText = 'Total Score';
+        const totalTitle = document.createElement('h3');
+        // --- use language manager for "Total Score" title ---
+        totalTitle.innerText = this.languageManager.get('totalScoreTitle');
         Object.assign(totalTitle.style, {
             marginTop: '20px',
             marginBottom: '10px',
+            fontSiz : '1.5rem',
             borderTop: '1px solid #555',
             paddingTop: '15px'
         });
         box.appendChild(totalTitle);
         
-        //sort players by total score for the summary list
         const sortedPlayerIds = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
         sortedPlayerIds.forEach(id => {
-            const player = this.players.find(pl => pl.id === id);
-            if (player) {
-                const scoreP = document.createElement('p');
-                scoreP.innerText = `${player.name}: ${scores[id]} pts`;
-                scoreP.style.margin = '4px 0';
-                box.appendChild(scoreP);
-            }
-        });
+			const player = this.players.find(pl => pl.id === id);
+			if (player) {
+				const scoreRow = document.createElement('div');
+				Object.assign(scoreRow.style, {
+				    display: 'flex',
+				    justifyContent: 'space-between',
+				    background: '#34343a',
+				    padding: '6px 12px',
+				    borderRadius: '6px',
+				    marginBottom: '6px'
+				});
 
+				const nameDiv = document.createElement('span');
+				nameDiv.innerText = player.name;
+				Object.assign(nameDiv.style, {
+				    fontWeight: 'bold',
+				    color: '#fff'
+				});
+
+				const scoreDiv = document.createElement('span');
+				scoreDiv.innerText = `${scores[id]} pts`;
+				Object.assign(scoreDiv.style, {
+				    fontWeight: 'bold',
+				    color: '#4CAF50'
+				});
+
+				scoreRow.appendChild(nameDiv);
+				scoreRow.appendChild(scoreDiv);
+				box.appendChild(scoreRow);
+			}
+		});
 
 		const countdownText = document.createElement('p');
 		Object.assign(countdownText.style, {
@@ -203,8 +235,7 @@ export default class TypingGame extends Phaser.Scene {
 		overlay.appendChild(box);
 		document.body.appendChild(overlay);
 
-		//countdown logic remains the same
-		let countdown = 8;
+		let countdown = 7;
 		countdownText.innerText = this.languageManager.get('nextRoundIn', { countdown: countdown });
 		const interval = setInterval(() => {
 		    countdown--;
@@ -311,7 +342,7 @@ export default class TypingGame extends Phaser.Scene {
         });
         box.appendChild(podiumContainer);
 
-        // --- NEW: List for other players ---
+        // --- list for other players ---
         if (rankedPlayers.length > 3) {
             const othersTitle = document.createElement('h3');
             othersTitle.innerText = 'Remaining Players';

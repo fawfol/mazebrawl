@@ -55,5 +55,8 @@
   "selectDifficulty" : "難易度",
   "difficultyEasy": "簡単",
   "difficultyHard": "難しい",
-  "difficultyPro": "プロ"
+  "difficultyPro": "プロ",
+  "pointsGainedText": "+{points}点",
+  "totalScoreTitle": "合計スコア",
+  "totalScoreLine": "{name}: {score}点"
 }

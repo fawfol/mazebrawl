@@ -374,7 +374,7 @@ export default class GameScene extends Phaser.Scene {
 
 
 
-    addChatMessage(msg, color = 'white') { //changed default to white for dark theme
+    addChatMessage(msg, color = 'black') { //changed default to white for dark theme
         const p = document.createElement('p');
         p.innerText = msg;
         p.style.color = color;
