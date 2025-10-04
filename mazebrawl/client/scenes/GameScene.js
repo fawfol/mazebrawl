@@ -84,6 +84,8 @@ export default class GameScene extends Phaser.Scene {
         this.socket.off('roomUpdate');
         this.socket.on('roomUpdate', async (data) => {
             if (data.language && data.language !== this.languageManager.currentLang) {
+                // BUG FIX: Update the scene's own language variable
+                this.language = data.language; 
                 await this.languageManager.loadLanguage(data.language);
                 if(this.languageSelector) this.languageSelector.value = data.language;
                 this.updateUIText();
@@ -138,6 +140,8 @@ export default class GameScene extends Phaser.Scene {
         this.languageSelector.value = this.languageManager.currentLang;
         this.languageSelector.onchange = async () => {
             const newLang = this.languageSelector.value;
+            // BUG FIX: Update the scene's own language variable
+            this.language = newLang; 
             await this.languageManager.loadLanguage(newLang);
             this.updateUIText();
             this.socket.emit('changeLanguage', newLang);
@@ -367,6 +371,8 @@ export default class GameScene extends Phaser.Scene {
         this.socket.emit('gameChatMessage', text);
         this.chatInput.value = '';
     }
+
+
 
     addChatMessage(msg, color = 'white') { //changed default to white for dark theme
         const p = document.createElement('p');
