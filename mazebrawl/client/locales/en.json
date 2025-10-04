@@ -58,6 +58,7 @@
   "difficultyPro": "Pro",
   "pointsGainedText": "+{points} pts",
   "totalScoreTitle": "Total Score",
+  "totalScoreLabel": "Total: {score} pts",
   "totalScoreLine": "{name}: {score} pts"
 }
 

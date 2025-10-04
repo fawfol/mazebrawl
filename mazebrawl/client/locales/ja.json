@@ -58,5 +58,6 @@
   "difficultyPro": "プロ",
   "pointsGainedText": "+{points}点",
   "totalScoreTitle": "合計スコア",
+  "totalScoreLabel": "合計: {score}点",
   "totalScoreLine": "{name}: {score}点"
 }

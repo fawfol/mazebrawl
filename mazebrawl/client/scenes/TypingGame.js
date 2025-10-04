@@ -177,7 +177,52 @@ export default class TypingGame extends Phaser.Scene {
         });
         box.appendChild(resultsContainer);
         
-       
+        ////////////////////////////
+        const totalTitle = document.createElement('h3');
+        // --- use language manager for "Total Score" title ---
+        totalTitle.innerText = this.languageManager.get('totalScoreTitle');
+        Object.assign(totalTitle.style, {
+            marginTop: '20px',
+            marginBottom: '10px',
+            fontSiz : '1.5rem',
+            borderTop: '1px solid #555',
+            paddingTop: '15px'
+        });
+        box.appendChild(totalTitle);
+        
+        const sortedPlayerIds = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
+        sortedPlayerIds.forEach(id => {
+			const player = this.players.find(pl => pl.id === id);
+			if (player) {
+				const scoreRow = document.createElement('div');
+				Object.assign(scoreRow.style, {
+				    display: 'flex',
+				    justifyContent: 'space-between',
+				    background: '#34343a',
+				    padding: '6px 12px',
+				    borderRadius: '6px',
+				    marginBottom: '6px'
+				});
+
+				const nameDiv = document.createElement('span');
+				nameDiv.innerText = player.name;
+				Object.assign(nameDiv.style, {
+				    fontWeight: 'bold',
+				    color: '#fff'
+				});
+
+				const scoreDiv = document.createElement('span');
+				scoreDiv.innerText = `${scores[id]} pts`;
+				Object.assign(scoreDiv.style, {
+				    fontWeight: 'bold',
+				    color: '#4CAF50'
+				});
+
+				scoreRow.appendChild(nameDiv);
+				scoreRow.appendChild(scoreDiv);
+				box.appendChild(scoreRow);
+			}
+		});
 
 		const countdownText = document.createElement('p');
 		Object.assign(countdownText.style, {
