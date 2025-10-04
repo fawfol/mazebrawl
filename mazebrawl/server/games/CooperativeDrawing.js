@@ -15,7 +15,7 @@ class CooperativeDrawing {
     this.players = players;
     this.onGameEnd = onGameEnd;
     this.difficulty = difficulty;
-    this.lang = lang; // Language support can be added later
+    this.lang = lang; //language support can be added later
 
     this.playerCanvases = {}; // { playerId: 'base64_image_data' }
     this.gameTimer = null;
@@ -28,7 +28,7 @@ class CooperativeDrawing {
     this.prompt = promptList[Math.floor(Math.random() * promptList.length)];
     this.timeLimit = timers[this.difficulty] || timers['easy'];
 
-    // Assign each player a segment of the canvas
+    //assign each player a segment of the canvas
     const segments = this.players.map((p, index) => ({ playerId: p.id, segmentIndex: index }));
     
     this.io.to(this.roomId).emit('startGame', 'DrawingGameScene', this.prompt, {
@@ -46,18 +46,18 @@ class CooperativeDrawing {
 
   handleDrawing(playerId, canvasData) {
     this.playerCanvases[playerId] = canvasData;
-    // Broadcast the drawing update to all other players in the room
+    //broadcast the drawing update to all other players in the room
     this.io.to(this.roomId).emit('drawingUpdate', { playerId, canvasData });
   }
 
-  // This is where the AI judgment would happen.
-  // For now, we'll simulate it with a random score.
+  //this is where the AI judgment would happen.
+  //for now, we'll simulate it with a random score.
   async getAIScore(combinedImage, prompt) {
     console.log('Simulating AI judgment for prompt:', prompt);
-    // In a real implementation, you would send the `combinedImage` (base64)
-    // and `prompt` to a multimodal AI model API.
+    //in a real implementation, you would send the `combinedImage` (base64)
+    //s nd `prompt` to a multimodal AI model API.
     
-    // Simulate API call delay
+    //dimulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Return a random score for demonstration purposes
@@ -77,8 +77,8 @@ class CooperativeDrawing {
     console.log(`Game ended in room ${this.roomId}. Evaluating drawing...`);
     this.io.to(this.roomId).emit('evaluatingDrawing');
     
-    // The client will send the final combined image.
-    // We'll wait for that event.
+    //the client will send the final combined image.
+    //wll wait for that event.
   }
   
   async handleSubmit(finalImage) {
@@ -91,7 +91,7 @@ class CooperativeDrawing {
           feedback: result.feedback
       });
 
-      // Schedule cleanup
+      //schedule cleanup
       setTimeout(() => {
         if (this.onGameEnd) {
           console.log(`Auto-cleaning CooperativeDrawing game in room ${this.roomId}.`);

@@ -1,4 +1,3 @@
-// mazebrawl/client/scenes/DrawingGameScene.js
 import LanguageManager from '../LanguageManager.js';
 
 export default class DrawingGameScene extends Phaser.Scene {
@@ -21,10 +20,12 @@ export default class DrawingGameScene extends Phaser.Scene {
 
         //drawing state
         this.isDrawing = false;
-        this.currentColor = '#FFFFFF';
+        this.baseColor = '#000000';
+        this.lightness = 50;         //slider value (0-100)
+        this.currentColor = '#000000';   //final color after lightness is applied
         this.currentBrushSize = 5;
     }
-    
+     
     async create() {
         this.languageManager = new LanguageManager(this);
         await this.languageManager.loadLanguage(this.language);
@@ -88,51 +89,109 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.canvasContainer.className = 'draw-canvas-container';
         main.appendChild(this.canvasContainer);
 
-        // Tools
+        // tools
         this.createToolbar(main);
     }
-    
+
     createToolbar(container) {
         const toolbar = document.createElement('div');
         toolbar.className = 'draw-toolbar';
+
+        // --- Color Palette Group ---
+        const colorGroup = document.createElement('div');
+        colorGroup.className = 'tool-group';
+        colorGroup.innerHTML = '<h3>Colors</h3>';
+        const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#FFFFFF', '#000000'];
+        const colorContainer = document.createElement('div');
+        colorContainer.className = 'color-container';
         
-        //colors
-        const colors = ['#FFFFFF', '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500'];
         colors.forEach(color => {
             const colorBtn = document.createElement('button');
             colorBtn.className = 'draw-tool-color';
             colorBtn.style.backgroundColor = color;
-            if (color === this.currentColor) colorBtn.classList.add('selected');
+            if (color === this.baseColor) colorBtn.classList.add('selected');
+            
             colorBtn.onclick = () => {
-                this.currentColor = color;
+                this.baseColor = color; //set new base color
+                this.lightness = 50; // reset lightness to neutral
+                document.getElementById('lightness-slider').value = 50; //update slider UI
+                
+                this.updateCurrentColor(); //calculate the final color
+                
                 toolbar.querySelector('.selected')?.classList.remove('selected');
                 colorBtn.classList.add('selected');
             };
-            toolbar.appendChild(colorBtn);
+            colorContainer.appendChild(colorBtn);
         });
-        
-        //brush Size
+        colorGroup.appendChild(colorContainer);
+        toolbar.appendChild(colorGroup);
+
+        // --- Lightness Group ---
+        const lightnessGroup = document.createElement('div');
+        lightnessGroup.className = 'tool-group';
+        lightnessGroup.innerHTML = '<h3>Lightness</h3>';
+        const lightnessSlider = document.createElement('input');
+        lightnessSlider.type = 'range';
+        lightnessSlider.id = 'lightness-slider';
+        lightnessSlider.min = '0';  //black
+        lightnessSlider.max = '100'; //white
+        lightnessSlider.value = this.lightness;
+        lightnessSlider.oninput = (e) => {
+            this.lightness = e.target.value;
+            this.updateCurrentColor();
+        };
+        lightnessGroup.appendChild(lightnessSlider);
+        toolbar.appendChild(lightnessGroup);
+
+        // --- brush size group ---
+        const brushGroup = document.createElement('div');
+        brushGroup.className = 'tool-group';
+        brushGroup.innerHTML = '<h3>Brush Size</h3>';
+        const brushPreview = document.createElement('div');
+        brushPreview.className = 'brush-preview';
+        const brushDot = document.createElement('div');
+        brushDot.className = 'brush-dot';
+        brushDot.style.width = `${this.currentBrushSize}px`;
+        brushDot.style.height = `${this.currentBrushSize}px`;
+        brushDot.style.backgroundColor = this.currentColor;
+        brushPreview.appendChild(brushDot);
+        brushGroup.appendChild(brushPreview);
         const brushSizeSlider = document.createElement('input');
         brushSizeSlider.type = 'range';
-        brushSizeSlider.min = '1';
-        brushSizeSlider.max = '20';
+        brushSizeSlider.min = '2';
+        brushSizeSlider.max = '30';
         brushSizeSlider.value = this.currentBrushSize;
-        brushSizeSlider.oninput = (e) => this.currentBrushSize = e.target.value;
-        toolbar.appendChild(brushSizeSlider);
-        
-        //eraser
+        brushSizeSlider.oninput = (e) => {
+            this.currentBrushSize = e.target.value;
+            brushDot.style.width = `${this.currentBrushSize}px`;
+            brushDot.style.height = `${this.currentBrushSize}px`;
+        };
+        brushGroup.appendChild(brushSizeSlider);
+        toolbar.appendChild(brushGroup);
+
+        // --- actions Group ---
+        const actionsGroup = document.createElement('div');
+        actionsGroup.className = 'tool-group';
+        actionsGroup.innerHTML = '<h3>Actions</h3>';
         const eraserBtn = document.createElement('button');
+        eraserBtn.className = 'eraser-btn';
         eraserBtn.innerText = 'Eraser';
-        eraserBtn.onclick = () => this.currentColor = '#1e1e1e'; // BG color
-        toolbar.appendChild(eraserBtn);
+        eraserBtn.onclick = () => {
+            this.currentColor = '#FFFFFF'; //eraser is always white
+            toolbar.querySelector('.selected')?.classList.remove('selected');
+            eraserBtn.classList.add('selected');
+        };
+        actionsGroup.appendChild(eraserBtn);
+        toolbar.appendChild(actionsGroup);
 
         container.appendChild(toolbar);
+        this.updateCurrentColor();
     }
 
     updatePromptText() {
         this.promptText.innerText = `Prompt: "${this.prompt}"`;
     }
-    
+     
     startTimer() {
         let timeLeft = this.timeLimit;
         this.timerText.innerText = timeLeft;
@@ -144,35 +203,56 @@ export default class DrawingGameScene extends Phaser.Scene {
             }
         }, 1000);
     }
-    
+     
     initializeCanvases() {
         this.canvasContainer.innerHTML = '';
         this.otherCanvases = {};
         
-        //determine grid layout
         const cols = Math.ceil(Math.sqrt(this.playerCount));
         const rows = Math.ceil(this.playerCount / cols);
         this.canvasContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
         for (let i = 0; i < this.playerCount; i++) {
-            const segment = this.segments.find(s => s.segmentIndex === i);
-            const playerId = segment?.playerId;
+            const segmentData = this.segments.find(s => s.segmentIndex === i);
+            const playerId = segmentData?.playerId;
+            const player = this.players.find(p => p.id === playerId);
+            
+            //create a wrapper for the canvas and nameplate
+            const segmentWrapper = document.createElement('div');
+            segmentWrapper.className = 'canvas-segment';
+
+            let canvasElement;
 
             if (i === this.mySegmentIndex) {
                 this.myCanvas = document.createElement('canvas');
                 this.myCanvas.className = 'draw-canvas my-canvas';
-                this.canvasContainer.appendChild(this.myCanvas);
                 this.setupDrawingListeners();
+                canvasElement = this.myCanvas;
             } else {
-                const otherCanvas = document.createElement('img'); //use img for read-only display
+                const otherCanvas = document.createElement('img');
                 otherCanvas.className = 'draw-canvas';
-                this.canvasContainer.appendChild(otherCanvas);
                 if (playerId) this.otherCanvases[playerId] = otherCanvas;
+                canvasElement = otherCanvas;
             }
+
+            //add the canvas/img to the wrapper
+            segmentWrapper.appendChild(canvasElement);
+
+            //add the player nameplate
+            if (player) {
+                const nameplate = document.createElement('div');
+                nameplate.className = 'player-nameplate';
+                nameplate.innerText = player.name;
+                segmentWrapper.appendChild(nameplate);
+            }
+
+            this.canvasContainer.appendChild(segmentWrapper);
         }
-        this.resizeCanvas();
+        
+        //small delay to ensure the DOM is ready before resizing
+        setTimeout(() => this.resizeCanvas(), 100);
     }
-    
+
     resizeCanvas() {
         const canvasEl = this.myCanvas;
         if (!canvasEl) return;
@@ -205,11 +285,50 @@ export default class DrawingGameScene extends Phaser.Scene {
         };
     }
 
+    hslToHex(h, s, l) {
+        l /= 100;
+        const a = s * Math.min(l, 1 - l) / 100;
+        const f = n => {
+            const k = (n + h / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * color).toString(16).padStart(2, '0');
+        };
+        return `#${f(0)}${f(8)}${f(4)}`;
+    }
+
+    hexToHsl(hex) {
+        if (!hex || hex.length < 6) { return [0, 0, 0]; }
+        let [r, g, b] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h = 0, s = 0, l = (max + min) / 2;
+        if (max !== min) {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+        return [h * 360, s * 100, l * 100];
+    }
+ 
+    updateCurrentColor() {
+        const [h, s] = this.hexToHsl(this.baseColor);
+        this.currentColor = this.hslToHex(h, s, this.lightness);
+        const brushDot = document.querySelector('.brush-dot');
+        if (brushDot) {
+            brushDot.style.backgroundColor = this.currentColor;
+        }
+    }
+
     startDrawing(e) {
         this.isDrawing = true;
         this.lastPos = this.getPos(e);
     }
-    
+     
     stopDrawing() {
         this.isDrawing = false;
         this.ctx.beginPath(); //reset the path
@@ -236,7 +355,7 @@ export default class DrawingGameScene extends Phaser.Scene {
             imgElement.src = canvasData;
         }
     }
-    
+     
     showEvaluationScreen() {
         //first, combine all the canvases into one image
         const cols = Math.ceil(Math.sqrt(this.playerCount));
@@ -248,7 +367,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         finalCanvas.width = segmentWidth * cols;
         finalCanvas.height = segmentHeight * rows;
         const finalCtx = finalCanvas.getContext('2d');
-        finalCtx.fillStyle = '#1e1e1e';
+        finalCtx.fillStyle = '#FFFFFF'; // Changed to white
         finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
         this.segments.forEach(seg => {
@@ -264,7 +383,7 @@ export default class DrawingGameScene extends Phaser.Scene {
                 sourceElement = this.otherCanvases[seg.playerId];
             }
 
-            if (sourceElement) {
+            if (sourceElement && sourceElement.width > 0 && sourceElement.height > 0) {
                 finalCtx.drawImage(sourceElement, x, y, segmentWidth, segmentHeight);
             }
         });
@@ -277,18 +396,50 @@ export default class DrawingGameScene extends Phaser.Scene {
     }
 
     showFinalResults(results) {
-        const content = `
-            <h2>Results are in!</h2>
+        //clean up the UI
+        document.querySelector('.draw-overlay')?.remove(); 
+        const toolbar = document.querySelector('.draw-toolbar');
+        if (toolbar) toolbar.style.display = 'none'; 
+
+        const mainContainer = document.querySelector('.draw-main');
+        if (mainContainer) mainContainer.classList.add('results-active');
+
+        //"Join" the canvas segments by removing the grid gap
+        this.canvasContainer.classList.add('results-mode');
+
+        //new compact panel for the results
+        const resultsPanel = document.createElement('div');
+        resultsPanel.id = 'results-panel';
+
+        //fill the panel with the results data
+        resultsPanel.innerHTML = `
+            <h2>Results</h2>
             <p>For the prompt: <strong>"${results.prompt}"</strong></p>
-            <img src="${results.finalImage}" style="width: 90%; max-width: 400px; border: 2px solid #fff; margin: 10px 0;"/>
-            <h3>AI Score: <span style="color: #00bfff;">${results.score}%</span></h3>
-            <p>${results.feedback}</p>
+            <h3>AI Score: <span class="ai-score">${results.score}%</span></h3>
+            <p class="ai-feedback"><em>${results.feedback}</em></p>
         `;
-        this.showOverlay(content, true);
+
+        //add the Exit Button to the new panel
+        const exitBtn = document.createElement('button');
+        exitBtn.innerText = this.languageManager.get('exitToGameSelectionButton');
+        exitBtn.onclick = () => {
+            this.scene.stop('DrawingGameScene');
+            this.scene.start('GameScene', {
+                players: this.players,
+                myIndex: this.players.findIndex(p => p.id === this.socket.id),
+                socket: this.socket,
+                leaderId: this.leaderId,
+                language: this.language
+            });
+        };
+        resultsPanel.appendChild(exitBtn);
+
+        //new results panel to the main container
+        mainContainer.appendChild(resultsPanel);
     }
-    
+     
     showOverlay(innerHTML, showExitButton = false) {
-        document.querySelector('.draw-overlay')?.remove(); //remove old overlay
+        document.querySelector('.draw-overlay')?.remove();
         
         const overlay = document.createElement('div');
         overlay.className = 'draw-overlay';
