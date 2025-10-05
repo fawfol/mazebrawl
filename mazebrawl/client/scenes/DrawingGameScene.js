@@ -17,6 +17,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.segments = [];
         this.playerCount = 0;
         this.mySegmentIndex = -1;
+        this.layout = {};
 
         //drawing state
         this.isDrawing = false;
@@ -41,6 +42,7 @@ export default class DrawingGameScene extends Phaser.Scene {
             this.prompt = prompt;
             this.timeLimit = extra.timeLimit;
             this.segments = extra.segments;
+            this.layout = extra.layout;
             this.playerCount = extra.playerCount;
             this.mySegmentIndex = this.segments.find(s => s.playerId === this.socket.id)?.segmentIndex ?? -1;
             
@@ -207,23 +209,22 @@ export default class DrawingGameScene extends Phaser.Scene {
     initializeCanvases() {
         this.canvasContainer.innerHTML = '';
         this.otherCanvases = {};
-        
-        const cols = Math.ceil(Math.sqrt(this.playerCount));
-        const rows = Math.ceil(this.playerCount / cols);
-        this.canvasContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
-        for (let i = 0; i < this.playerCount; i++) {
-            const segmentData = this.segments.find(s => s.segmentIndex === i);
-            const playerId = segmentData?.playerId;
-            const player = this.players.find(p => p.id === playerId);
+        // Apply the new grid layout instructions from the server
+        this.canvasContainer.style.gridTemplateAreas = this.layout.gridTemplateAreas;
+        this.canvasContainer.style.gridTemplateColumns = this.layout.gridTemplateColumns;
+        this.canvasContainer.style.gridTemplateRows = this.layout.gridTemplateRows;
+
+        this.segments.forEach(segment => {
+            const player = this.players.find(p => p.id === segment.playerId);
             
-            //create a wrapper for the canvas and nameplate
             const segmentWrapper = document.createElement('div');
             segmentWrapper.className = 'canvas-segment';
+            segmentWrapper.style.gridArea = segment.area; // Assign to its grid area
 
             let canvasElement;
 
-            if (i === this.mySegmentIndex) {
+            if (segment.playerId === this.socket.id) {
                 this.myCanvas = document.createElement('canvas');
                 this.myCanvas.className = 'draw-canvas my-canvas';
                 this.setupDrawingListeners();
@@ -231,27 +232,24 @@ export default class DrawingGameScene extends Phaser.Scene {
             } else {
                 const otherCanvas = document.createElement('img');
                 otherCanvas.className = 'draw-canvas';
-                if (playerId) this.otherCanvases[playerId] = otherCanvas;
+                if (segment.playerId) this.otherCanvases[segment.playerId] = otherCanvas;
                 canvasElement = otherCanvas;
             }
 
-            //add the canvas/img to the wrapper
             segmentWrapper.appendChild(canvasElement);
 
-            //add the player nameplate
             if (player) {
                 const nameplate = document.createElement('div');
                 nameplate.className = 'player-nameplate';
                 nameplate.innerText = player.name;
                 segmentWrapper.appendChild(nameplate);
             }
-
             this.canvasContainer.appendChild(segmentWrapper);
-        }
+        });
         
-        //small delay to ensure the DOM is ready before resizing
         setTimeout(() => this.resizeCanvas(), 100);
     }
+
 
     resizeCanvas() {
         const canvasEl = this.myCanvas;
