@@ -130,8 +130,7 @@ class CooperativeDrawing {
     // Return a random score for demonstration purposes
     const randomScore = Math.floor(Math.random() * 51) + 45; // Score between 45 and 95
     return {
-        score: randomScore,
-        feedback: "AI feedback is a future feature!"
+        score: randomScore
     };
   }
 

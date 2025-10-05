@@ -529,7 +529,7 @@ input[type='range'] {
 #results-panel {
   width: 95%;
   max-width: 420px;
-  max-height: 90dvh; 
+  max-height: 95vh; 
   overflow-y: auto; 
   box-sizing: border-box;
   padding: 20px 15px;
@@ -580,3 +580,17 @@ input[type='range'] {
 #results-panel button {
   margin-top: 15px;
 }
+.results-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+@media (max-width: 480px) {
+  .results-buttons {
+    flex-direction: column; 
+    align-items: stretch;
+  }
+}
+

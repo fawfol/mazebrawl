@@ -434,7 +434,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         resultsPanel.appendChild(title);
 
         const promptEl = document.createElement('p');
-        promptEl.innerHTML = `For the prompt: <strong>"${results.prompt}"</strong>`;
+        promptEl.innerHTML = `TOPIC: <strong>"${results.prompt}"</strong>`;
         resultsPanel.appendChild(promptEl);
 
         //add final combined image INSIDE the panel
@@ -449,29 +449,19 @@ export default class DrawingGameScene extends Phaser.Scene {
 
         //add ai score and feedback
         const scoreEl = document.createElement('h3');
-        scoreEl.innerHTML = `AI Score: <span class="ai-score">${results.score}%</span>`;
+        scoreEl.innerHTML = `SCORE: <span class="ai-score">${results.score}%</span>`;
         resultsPanel.appendChild(scoreEl);
-
-        const feedbackEl = document.createElement('p');
-        feedbackEl.className = 'ai-feedback';
-        feedbackEl.innerHTML = `<em>${results.feedback}</em>`;
-        resultsPanel.appendChild(feedbackEl);
 
         //add list of cooperating players
         const playersEl = document.createElement('div');
         const playerNames = this.players.map(p => p.name).join(', ');
-        playersEl.innerHTML = `<strong>Coop:</strong> ${playerNames}`;
+        playersEl.innerHTML = `<strong>DRAWN BY :</strong> ${playerNames} `;
         playersEl.style.marginTop = '15px';
         resultsPanel.appendChild(playersEl);
         
          //add the actionbuttons (exit n download)
        const buttonWrapper = document.createElement('div');
-        Object.assign(buttonWrapper.style, {
-            display: 'flex',
-            gap: '10px',
-            justifyContent: 'center',
-            marginTop: '20px'
-        });
+       buttonWrapper.className = 'results-buttons';
 
         const exitBtn = document.createElement('button');
         exitBtn.innerText = this.languageManager.get('exitToGameSelectionButton');
