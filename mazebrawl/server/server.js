@@ -124,8 +124,6 @@ io.on('connection', (socket) => {
     }
   });
   
-  // --- SINGLE CORRECT 'selectGame' HANDLER ---
-  // This is the NEW code to paste in
 	socket.on('selectGame', (gameType, options, callback) => {
 		let playerRoomId = null;
 		let playerRoom = null;
@@ -150,11 +148,11 @@ io.on('connection', (socket) => {
 		        playerRoom.gameStartTimer = gameStartTimer;
 
 		    } else if (gameType === 'DrawingGame') {
-		          const preCountdownDuration = 5; // Give 5 seconds to show "Game Starting"
-		          // We tell the client to switch to the 'DrawingGameScene'
+		          const preCountdownDuration = 5; //give 5 seconds to show "Game Starting"
+		          // we tell the client to switch to the 'DrawingGameScene'
 		          io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType: 'DrawingGameScene' });
 		          
-		          // We wait for the countdown duration before actually creating the game instance
+		          //we wait for the countdown duration before actually creating the game instance
 		          const gameStartTimer = setTimeout(() => {
 		              activeGames.startNewGame(playerRoomId, 'CooperativeDrawing', playerRoom.players, gameLang, callback, options.difficulty);
 		              if (playerRoom) delete playerRoom.gameStartTimer;
@@ -193,6 +191,16 @@ io.on('connection', (socket) => {
 
   socket.on('typingProgress', (progress) => {
     activeGames.handleGameEvent(socket.id, 'typingProgress', progress);
+  });
+  
+  socket.on('playerFinishedDrawing', () => {
+    for (const [roomId, room] of rooms.entries()) {
+      if (room.players.some(p => p.id === socket.id)) {
+        //broadcast to everyone in the room *except* the sender
+        socket.to(roomId).emit('playerStatusUpdate', { playerId: socket.id });
+        break;
+      }
+    }
   });
   
   socket.on('drawingAction', (canvasData) => {
@@ -276,4 +284,3 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
