@@ -267,7 +267,7 @@ export default class DrawingGameScene extends Phaser.Scene {
             this.canvasContainer.appendChild(segmentWrapper);
         });
         
-        setTimeout(() => this.resizeCanvas(), 100);
+        requestAnimationFrame(() => this.resizeCanvas());
     }
 
 
