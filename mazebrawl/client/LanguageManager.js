@@ -23,7 +23,7 @@ export default class LanguageManager {
     }
   }
 
-  //get() can now handle simple replacements
+  //get() can now handle simple replacements like 
   get(key, replacements = {}) {
     let translation = this.translations[key] || key;
     for (const placeholder in replacements) {

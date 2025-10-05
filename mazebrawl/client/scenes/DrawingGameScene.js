@@ -183,19 +183,6 @@ export default class DrawingGameScene extends Phaser.Scene {
         actionsGroup.className = 'tool-group';
         actionsGroup.innerHTML = '<h3>Actions</h3>';
         
-        const doneBtn = document.createElement('button');
-		doneBtn.className = 'done-btn';
-		doneBtn.innerText = 'I\'m Done';
-		doneBtn.onclick = () => {
-		    // Visually update for the local player
-		    this.myCanvas.classList.add('finished-canvas');
-		    doneBtn.disabled = true;
-		    doneBtn.innerText = 'Finished!';
-		    // Tell the server we are done
-		    this.socket.emit('playerFinishedDrawing');
-		};
-		actionsGroup.appendChild(doneBtn);
-        
         const eraserBtn = document.createElement('button');
         eraserBtn.className = 'eraser-btn';
         eraserBtn.innerText = 'Eraser';
@@ -205,6 +192,18 @@ export default class DrawingGameScene extends Phaser.Scene {
             eraserBtn.classList.add('selected');
         };
         actionsGroup.appendChild(eraserBtn);
+        
+        const doneBtn = document.createElement('button');
+		doneBtn.className = 'done-btn';
+		doneBtn.innerText = 'Done';
+		doneBtn.onclick = () => {
+		    this.myCanvas.classList.add('finished-canvas');
+		    doneBtn.disabled = true;
+		    doneBtn.innerText = 'Finished!';
+		    this.socket.emit('playerFinishedDrawing');
+		};
+		actionsGroup.appendChild(doneBtn);
+        
         toolbar.appendChild(actionsGroup);
 
         container.appendChild(toolbar);
@@ -212,7 +211,7 @@ export default class DrawingGameScene extends Phaser.Scene {
     }
 
     updatePromptText() {
-        this.promptText.innerText = `Prompt: "${this.prompt}"`;
+        this.promptText.innerText = `TOPIC: "${this.prompt}"`;
     }
      
     startTimer() {
@@ -386,7 +385,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         finalCanvas.width = segmentWidth * cols;
         finalCanvas.height = segmentHeight * rows;
         const finalCtx = finalCanvas.getContext('2d');
-        finalCtx.fillStyle = '#FFFFFF'; // Changed to white
+        finalCtx.fillStyle = '#FFFFFF';
         finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
         this.segments.forEach(seg => {
@@ -407,38 +406,62 @@ export default class DrawingGameScene extends Phaser.Scene {
             }
         });
         
-        //send the final combined image to the server
         this.socket.emit('submitDrawing', finalCanvas.toDataURL());
         
-        //show "Evaluating..." overlay
         this.showOverlay("<h2>Evaluating your masterpiece...</h2><p>Our highly sophisticated AI is judging your work!</p>");
     }
 
     showFinalResults(results) {
-        //clean up the UI
-        document.querySelector('.draw-overlay')?.remove(); 
+        document.getElementById('results-panel')?.remove(); 
+        
+        //hide the original canvas container and toolbar.
+        if (this.canvasContainer) this.canvasContainer.style.display = 'none';
         const toolbar = document.querySelector('.draw-toolbar');
         if (toolbar) toolbar.style.display = 'none'; 
 
         const mainContainer = document.querySelector('.draw-main');
         if (mainContainer) mainContainer.classList.add('results-active');
 
-        //"Join" the canvas segments by removing the grid gap
-        this.canvasContainer.classList.add('results-mode');
-
-        //new compact panel for the results
+        // Create the new, unified results panel.
         const resultsPanel = document.createElement('div');
         resultsPanel.id = 'results-panel';
 
-        //fill the panel with the results data
-        resultsPanel.innerHTML = `
-            <h2>Results</h2>
-            <p>For the prompt: <strong>"${results.prompt}"</strong></p>
-            <h3>AI Score: <span class="ai-score">${results.score}%</span></h3>
-            <p class="ai-feedback"><em>${results.feedback}</em></p>
-        `;
+        //topic add
+        const title = document.createElement('h2');
+        title.innerText = 'Results';
+        resultsPanel.appendChild(title);
 
-        //add the Exit Button to the new panel
+        const promptEl = document.createElement('p');
+        promptEl.innerHTML = `For the prompt: <strong>"${results.prompt}"</strong>`;
+        resultsPanel.appendChild(promptEl);
+
+        //add final combined image INSIDE the panel
+        const finalImage = document.createElement('img');
+        finalImage.src = results.finalImage;
+        Object.assign(finalImage.style, {
+            width: '100%',
+            borderRadius: '5px',
+            margin: '15px 0'
+        });
+        resultsPanel.appendChild(finalImage);
+
+        //add ai score and feedback
+        const scoreEl = document.createElement('h3');
+        scoreEl.innerHTML = `AI Score: <span class="ai-score">${results.score}%</span>`;
+        resultsPanel.appendChild(scoreEl);
+
+        const feedbackEl = document.createElement('p');
+        feedbackEl.className = 'ai-feedback';
+        feedbackEl.innerHTML = `<em>${results.feedback}</em>`;
+        resultsPanel.appendChild(feedbackEl);
+
+        //add list of cooperating players
+        const playersEl = document.createElement('div');
+        const playerNames = this.players.map(p => p.name).join(', ');
+        playersEl.innerHTML = `<strong>Coop:</strong> ${playerNames}`;
+        playersEl.style.marginTop = '15px';
+        resultsPanel.appendChild(playersEl);
+
         const exitBtn = document.createElement('button');
         exitBtn.innerText = this.languageManager.get('exitToGameSelectionButton');
         exitBtn.onclick = () => {
@@ -453,7 +476,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         };
         resultsPanel.appendChild(exitBtn);
 
-        //new results panel to the main container
+        //add the completed panel to the screen
         mainContainer.appendChild(resultsPanel);
     }
      
