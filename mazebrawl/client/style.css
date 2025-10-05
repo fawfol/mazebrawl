@@ -375,7 +375,7 @@ input[type='text']:focus {
   width: 90vmin; 
   max-width: 700px;
   height: 90vmin;
-  max-height: 700px;
+  max-height: 650px;
   aspect-ratio: 1 / 0.8;
 }
 
@@ -529,7 +529,7 @@ input[type='range'] {
 #results-panel {
   width: 95%;
   max-width: 420px;
-  max-height: 95vh; 
+  max-height: 92vh; 
   overflow-y: auto; 
   box-sizing: border-box;
   padding: 20px 15px;
@@ -582,9 +582,9 @@ input[type='range'] {
 }
 .results-buttons {
   display: flex;
-  gap: 10px;
+  gap: 5px;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 @media (max-width: 480px) {
