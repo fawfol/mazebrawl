@@ -461,6 +461,15 @@ export default class DrawingGameScene extends Phaser.Scene {
         playersEl.innerHTML = `<strong>Coop:</strong> ${playerNames}`;
         playersEl.style.marginTop = '15px';
         resultsPanel.appendChild(playersEl);
+        
+         //add the actionbuttons (exit n download)
+       const buttonWrapper = document.createElement('div');
+        Object.assign(buttonWrapper.style, {
+            display: 'flex',
+            gap: '10px',
+            justifyContent: 'center',
+            marginTop: '20px'
+        });
 
         const exitBtn = document.createElement('button');
         exitBtn.innerText = this.languageManager.get('exitToGameSelectionButton');
@@ -474,9 +483,74 @@ export default class DrawingGameScene extends Phaser.Scene {
                 language: this.language
             });
         };
-        resultsPanel.appendChild(exitBtn);
+        //resultsPanel.appendChild(exitBtn);
+        
+        // CREATE DOWNLOAD BUTTON
+        const downloadBtn = document.createElement('button');
+        downloadBtn.innerText = 'Download';
+        downloadBtn.style.background = '#4CAF50'; 
+
+        downloadBtn.onclick = () => {
+            // --- downlaod logic ---
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            //set canvas size
+            canvas.width = 800;
+            canvas.height = 1000;
+
+            //create a background
+            ctx.fillStyle = '#2a2a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            //load the final drawing
+            const finalImage = new Image();
+            finalImage.onload = () => {
+                //draw the co-op image
+                ctx.drawImage(finalImage, 50, 200, 700, 500); // x, y, width, height
+
+                //set text styles
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+
+                //draw Title
+                ctx.font = 'bold 50px Poppins';
+                ctx.fillText('VARY-BRAWL', canvas.width / 2, 80);
+
+                //draw Prompt
+                ctx.font = '25px Poppins';
+                ctx.fillText(`TOPIC: "${results.prompt}"`, canvas.width / 2, 140);
+
+                //draw Score
+                ctx.font = 'bold 70px Poppins';
+                ctx.fillStyle = '#00bfff';
+                ctx.fillText(`SCORE : ${results.score}%`, canvas.width / 2, 780);
+
+                //draw Players
+                ctx.font = '25px Poppins';
+                ctx.fillStyle = 'white';
+                const playerNames = this.players.map(p => p.name).join(', ');
+                ctx.fillText(`DRAWN BY : ${playerNames} `, canvas.width / 2, 840);
+                
+                //draw Watermark
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = '16px Poppins';
+                ctx.fillText('play : https://varybrawl.onrender.com', canvas.width / 2, 950);
+
+                //trigger download
+                const link = document.createElement('a');
+                link.download = 'varybrawl-drawing.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            };
+            finalImage.src = results.finalImage;
+        };
 
         //add the completed panel to the screen
+        buttonWrapper.appendChild(exitBtn);
+        buttonWrapper.appendChild(downloadBtn);
+        resultsPanel.appendChild(buttonWrapper);
+        //lastly add
         mainContainer.appendChild(resultsPanel);
     }
      
