@@ -6,9 +6,98 @@ const prompts = {
     pro: ["An astronaut playing a guitar on the moon", "A detailed world map made of fruit", "A photorealistic portrait of a smiling capybara", "A medieval castle under siege by rubber chickens", "The Mona Lisa, but as a robot"]
 };
 
-const timers = { easy: 90, hard: 120, pro: 180 };
+const timers = { easy: 30, hard: 50, pro: 70 };
 
 class CooperativeDrawing {
+
+	/**
+   * Calculates grid layout and segment positions for a given number of players
+   * Keeps the overall canvas square
+   * @param {number} playerCount The number of players
+   * @returns {object} an object containing grid dimensions and segment definitions
+   */
+  calculateSegments(playerCount) {
+    let segments = [];
+    let gridTemplateAreas = '';
+    let gridTemplateColumns = '1fr';
+    let gridTemplateRows = '1fr';
+
+    //define layouts for different player counts
+    switch (playerCount) {
+      case 1:
+        gridTemplateAreas = '"a"';
+        segments = [{ segmentIndex: 0, area: 'a' }];
+        break;
+      case 2:
+        gridTemplateColumns = '1fr 1fr';
+        gridTemplateAreas = '"a b"';
+        segments = [{ segmentIndex: 0, area: 'a' }, { segmentIndex: 1, area: 'b' }];
+        break;
+      case 3: //users requested layout for 3 players
+        gridTemplateColumns = '1fr 1fr';
+        gridTemplateRows = '1fr 1fr';
+        gridTemplateAreas = '"a b" "c c"';
+        segments = [{ segmentIndex: 0, area: 'a' }, { segmentIndex: 1, area: 'b' }, { segmentIndex: 2, area: 'c' }];
+        break;
+      case 4:
+        gridTemplateColumns = '1fr 1fr';
+        gridTemplateRows = '1fr 1fr';
+        gridTemplateAreas = '"a b" "c d"';
+        segments = [{ segmentIndex: 0, area: 'a' }, { segmentIndex: 1, area: 'b' }, { segmentIndex: 2, area: 'c' }, { segmentIndex: 3, area: 'd' }];
+        break;
+      case 5:
+        gridTemplateColumns = '1fr 1fr 1fr';
+        gridTemplateRows = '1fr 1fr';
+        gridTemplateAreas = '"a b c" "d e e"';
+        segments = [{ segmentIndex: 0, area: 'a' }, { segmentIndex: 1, area: 'b' }, { segmentIndex: 2, area: 'c' }, { segmentIndex: 3, area: 'd' }, { segmentIndex: 4, area: 'e' }];
+        break;
+      case 6:
+        gridTemplateColumns = '1fr 1fr 1fr';
+        gridTemplateRows = '1fr 1fr';
+        gridTemplateAreas = '"a b c" "d e f"';
+        segments = [{ segmentIndex: 0, area: 'a' }, { segmentIndex: 1, area: 'b' }, { segmentIndex: 2, area: 'c' }, { segmentIndex: 3, area: 'd' }, { segmentIndex: 4, area: 'e' }, { segmentIndex: 5, area: 'f' }];
+        break;
+      default: //fallback for 7 players or more
+        gridTemplateColumns = '1fr 1fr';
+        gridTemplateRows = '1fr 1fr 1fr 1fr';
+        gridTemplateAreas = '"a b" "c d" "e f" "g g"';
+         for (let i = 0; i < playerCount; i++) {
+            segments.push({ segmentIndex: i, area: String.fromCharCode(97 + i) });
+        }
+        break;
+    }
+
+    //assign player IDs to the calculated segments
+    const assignedSegments = segments.map((seg, index) => ({
+      ...seg,
+      playerId: this.players[index]?.id || null,
+    }));
+    
+    return { layout: { gridTemplateAreas, gridTemplateColumns, gridTemplateRows }, segments: assignedSegments };
+  }
+
+
+  startGame() {
+    const promptList = prompts[this.difficulty] || prompts['easy'];
+    this.prompt = promptList[Math.floor(Math.random() * promptList.length)];
+    this.timeLimit = timers[this.difficulty] || timers['easy'];
+
+    // Use the new function to get the layout and segments
+    const { layout, segments } = this.calculateSegments(this.players.length);
+    
+    this.io.to(this.roomId).emit('startGame', 'DrawingGameScene', this.prompt, {
+        timeLimit: this.timeLimit,
+        segments: segments, // Send the new rich segment data
+        layout: layout,     // Send the new layout instructions
+        playerCount: this.players.length
+    });
+
+    console.log(`Cooperative Drawing started in room ${this.roomId} with prompt: "${this.prompt}"`);
+
+    this.gameTimer = setTimeout(() => {
+        this.endGame();
+    }, this.timeLimit * 1000);
+  }	
   constructor(io, roomId, players, lang = 'en', onGameEnd, difficulty = 'easy') {
     this.io = io;
     this.roomId = roomId;
@@ -21,27 +110,6 @@ class CooperativeDrawing {
     this.gameTimer = null;
 
     this.startGame();
-  }
-
-  startGame() {
-    const promptList = prompts[this.difficulty] || prompts['easy'];
-    this.prompt = promptList[Math.floor(Math.random() * promptList.length)];
-    this.timeLimit = timers[this.difficulty] || timers['easy'];
-
-    //assign each player a segment of the canvas
-    const segments = this.players.map((p, index) => ({ playerId: p.id, segmentIndex: index }));
-    
-    this.io.to(this.roomId).emit('startGame', 'DrawingGameScene', this.prompt, {
-        timeLimit: this.timeLimit,
-        segments: segments,
-        playerCount: this.players.length
-    });
-
-    console.log(`Cooperative Drawing started in room ${this.roomId} with prompt: "${this.prompt}"`);
-
-    this.gameTimer = setTimeout(() => {
-        this.endGame();
-    }, this.timeLimit * 1000);
   }
 
   handleDrawing(playerId, canvasData) {

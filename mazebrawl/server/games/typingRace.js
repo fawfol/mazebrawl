@@ -226,7 +226,7 @@ class TypingRace {
     }
   }
 
-  // Handle players who time out
+  //handle players who time out
   handleTimeOut() {
     console.log(`Round timed out in room ${this.roomId}`);
     this.players.forEach((p) => {
