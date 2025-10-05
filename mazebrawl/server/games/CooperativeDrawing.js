@@ -6,13 +6,12 @@ const prompts = {
     pro: ["An astronaut playing a guitar on the moon", "A detailed world map made of fruit", "A photorealistic portrait of a smiling capybara", "A medieval castle under siege by rubber chickens", "The Mona Lisa, but as a robot"]
 };
 
-const timers = { easy: 30, hard: 50, pro: 70 };
+const timers = { easy: 40, hard: 60, pro: 90 };
 
 class CooperativeDrawing {
 
 	/**
-   * Calculates grid layout and segment positions for a given number of players
-   * Keeps the overall canvas square
+   * calculates grid layout and segment positions for a given number of players  Keeps the overall canvas square
    * @param {number} playerCount The number of players
    * @returns {object} an object containing grid dimensions and segment definitions
    */
@@ -82,13 +81,13 @@ class CooperativeDrawing {
     this.prompt = promptList[Math.floor(Math.random() * promptList.length)];
     this.timeLimit = timers[this.difficulty] || timers['easy'];
 
-    // Use the new function to get the layout and segments
+    //use the new function to get the layout and segments
     const { layout, segments } = this.calculateSegments(this.players.length);
     
     this.io.to(this.roomId).emit('startGame', 'DrawingGameScene', this.prompt, {
         timeLimit: this.timeLimit,
-        segments: segments, // Send the new rich segment data
-        layout: layout,     // Send the new layout instructions
+        segments: segments, //send new rich segment data
+        layout: layout,     //send new layout instructions
         playerCount: this.players.length
     });
 
