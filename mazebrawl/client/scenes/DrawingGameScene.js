@@ -413,6 +413,8 @@ export default class DrawingGameScene extends Phaser.Scene {
 
     showFinalResults(results) {
         document.getElementById('results-panel')?.remove(); 
+        const header = document.querySelector('.draw-header');
+        if (header) header.style.display = 'none';
         
         //hide the original canvas container and toolbar.
         if (this.canvasContainer) this.canvasContainer.style.display = 'none';

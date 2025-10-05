@@ -527,18 +527,22 @@ input[type='range'] {
 }
 
 #results-panel {
-  width: 90%;
-  max-width: 400px;
-  padding: 25px;
+  width: 95%;
+  max-width: 420px;
+  max-height: 90dvh; 
+  overflow-y: auto; 
+  box-sizing: border-box;
+  padding: 20px 15px;
   background: linear-gradient(145deg, #3a3a40, #2a2a2e);
   border: 1px solid #555;
   border-radius: 15px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); 
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   text-align: center;
   font-family: 'Poppins', sans-serif;
 }
+
 
 #results-panel h2 {
   margin-top: 0;
