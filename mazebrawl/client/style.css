@@ -337,7 +337,7 @@ input[type='text']:focus {
 }
 
 /* =========================================
-   Drawing Game Styles (Unified)
+		   Drawing Game Styles 
    ========================================= */
 
 /* ---main Scene Container --- */
@@ -395,6 +395,19 @@ input[type='text']:focus {
   box-sizing: border-box;
 }
 
+/*style for the players own canvas when finished */
+.my-canvas.finished-canvas {
+  border-color: #4CAF50; /* Green */
+}
+
+/*style for other players segments when they are finished */
+.canvas-segment.player-finished {
+  border: 3px solid #4CAF50;
+  box-sizing: border-box;
+  border-radius: 2px;
+}
+
+
 .player-nameplate {
   position: absolute;
   bottom: 0;
@@ -435,10 +448,23 @@ input[type='text']:focus {
   color: #00bfff;
 }
 
+/*styling for the game timer */
+.draw-timer {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #ffc107; /* A nice yellow/amber color */
+  text-shadow: 0 0 5px rgba(0,0,0,0.5);
+  margin-top: -10px; /* Pull it a bit closer to the prompt */
+  margin-bottom: 5px;
+}
+
 /* --- Tools within the Toolbar --- */
 .color-container {
   display: flex; 
   gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 150px; 
 }
 
 .draw-tool-color {

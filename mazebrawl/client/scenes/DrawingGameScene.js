@@ -62,6 +62,13 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.socket.on('gameEnded', (results) => {
             this.showFinalResults(results);
         });
+        
+        this.socket.on('playerStatusUpdate', ({ playerId }) => {
+        const segmentWrapper = this.otherCanvases[playerId]?.parentElement;
+        if (segmentWrapper) {
+            segmentWrapper.classList.add('player-finished');
+        }
+    });
     }
 
     createUI() {
@@ -175,6 +182,20 @@ export default class DrawingGameScene extends Phaser.Scene {
         const actionsGroup = document.createElement('div');
         actionsGroup.className = 'tool-group';
         actionsGroup.innerHTML = '<h3>Actions</h3>';
+        
+        const doneBtn = document.createElement('button');
+		doneBtn.className = 'done-btn';
+		doneBtn.innerText = 'I\'m Done';
+		doneBtn.onclick = () => {
+		    // Visually update for the local player
+		    this.myCanvas.classList.add('finished-canvas');
+		    doneBtn.disabled = true;
+		    doneBtn.innerText = 'Finished!';
+		    // Tell the server we are done
+		    this.socket.emit('playerFinishedDrawing');
+		};
+		actionsGroup.appendChild(doneBtn);
+        
         const eraserBtn = document.createElement('button');
         eraserBtn.className = 'eraser-btn';
         eraserBtn.innerText = 'Eraser';
@@ -210,7 +231,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.canvasContainer.innerHTML = '';
         this.otherCanvases = {};
 
-        // Apply the new grid layout instructions from the server
+        //apply grid layout instructions from the server
         this.canvasContainer.style.gridTemplateAreas = this.layout.gridTemplateAreas;
         this.canvasContainer.style.gridTemplateColumns = this.layout.gridTemplateColumns;
         this.canvasContainer.style.gridTemplateRows = this.layout.gridTemplateRows;
@@ -220,7 +241,7 @@ export default class DrawingGameScene extends Phaser.Scene {
             
             const segmentWrapper = document.createElement('div');
             segmentWrapper.className = 'canvas-segment';
-            segmentWrapper.style.gridArea = segment.area; // Assign to its grid area
+            segmentWrapper.style.gridArea = segment.area; //assign to its grid area
 
             let canvasElement;
 
