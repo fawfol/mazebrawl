@@ -167,7 +167,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         // --- actions group ---
         const actionsGroup = document.createElement('div');
         actionsGroup.className = 'tool-group';
-        actionsGroup.innerHTML = `<h3>⚙️</h3>`; // Icon heading
+        actionsGroup.innerHTML = `<h3> </h3>`;
         
         const eraserBtn = document.createElement('button');
         eraserBtn.className = 'eraser-btn';
