@@ -1,27 +1,28 @@
 // mazebrawl/server/games/CooperativeDrawing.js
 
 const { createCanvas, loadImage } = require('canvas');
+const axios = require('axios');
 
-// --- Word Lists for Topic Generation ---
+// --- Word Lists For Topic Generation ---
 const wordLists = {
     adjectives: ["Happy", "Sad", "Angry", "Sleepy", "Giant", "Tiny", "Red", "Blue", "Yellow", "Green", "Purple", "Orange",
-  // moods & emotions
-  "Happy", "Sad", "Angry", "Excited", "Lonely", "Curious", "Peaceful", "Scared",
-  "Brave", "Nervous", "Sleepy", "Surprised", "Proud", "Jealous", "Lazy", "Hopeful",
-  "Shy", "Playful", "Serious", "Calm", "Cheerful", "Bored", "Confused", "Energetic",
+	  // moods & emotions
+	  "Happy", "Sad", "Angry", "Excited", "Lonely", "Curious", "Peaceful", "Scared",
+	  "Brave", "Nervous", "Sleepy", "Surprised", "Proud", "Jealous", "Lazy", "Hopeful",
+	  "Shy", "Playful", "Serious", "Calm", "Cheerful", "Bored", "Confused", "Energetic",
 
-  // looks & size
-  "Giant", "Tiny", "Tall", "Short", "Round", "Square", "Thin", "Fat", "Fluffy", "Smooth",
-  "Spiky", "Fuzzy", "Glowing", "Shiny", "Rusty", "Colorful", "Pale", "Bright", "Dark",
-  "Striped", "Spotted", "Transparent", "Metallic", "Golden", "Silver", "Wooden", "Plastic",
+	  // looks & size
+	  "Giant", "Tiny", "Tall", "Short", "Round", "Square", "Thin", "Fat", "Fluffy", "Smooth",
+	  "Spiky", "Fuzzy", "Glowing", "Shiny", "Rusty", "Colorful", "Pale", "Bright", "Dark",
+	  "Striped", "Spotted", "Transparent", "Metallic", "Golden", "Silver", "Wooden", "Plastic",
 
-  // personality or behavior
-  "Friendly", "Grumpy", "Sneaky", "Clever", "Clumsy", "Polite", "Loud", "Quiet",
-  "Funny", "Serious", "Smart", "Silly", "Gentle", "Wild", "Greedy", "Kind", "Lazy", "Bold",
+	  // personality or behavior
+	  "Friendly", "Grumpy", "Sneaky", "Clever", "Clumsy", "Polite", "Loud", "Quiet",
+	  "Funny", "Serious", "Smart", "Silly", "Gentle", "Wild", "Greedy", "Kind", "Lazy", "Bold",
 
-  // light creative ones (few “vibe” adjectives to keep rare spice)
-  "Ancient", "Frozen", "Burning", "Dreamy", "Magic", "Flying", "Invisible", "Floating",
-  "Underwater", "Electric", "Rainbow", "Shadowy"],
+	  // light creative ones (few “vibe” adjectives to keep rare spice)
+	  "Ancient", "Frozen", "Burning", "Dreamy", "Magic", "Flying", "Invisible", "Floating",
+	  "Underwater", "Electric", "Rainbow", "Shadowy"],
     
    subjects: [
 	  // animals
@@ -80,6 +81,302 @@ const wordLists = {
 	]
 
 };
+
+const jpMap = {
+  adjectives: {
+    // Basic emotions
+    "Happy": "うれしい",
+    "Sad": "かなしい",
+    "Angry": "おこっている",
+    "Excited": "わくわくした",
+    "Lonely": "さびしい",
+    "Curious": "こうきしんな",
+    "Peaceful": "おだやかな",
+    "Scared": "こわがっている",
+    "Brave": "ゆうかんな",
+    "Nervous": "きんちょうした",
+    "Sleepy": "ねむい",
+    "Surprised": "おどろいた",
+    "Proud": "ほこらしい",
+    "Jealous": "うらやましい",
+    "Lazy": "なまけものの",
+    "Hopeful": "きぼうにみちた",
+    "Shy": "はずかしがりやの",
+    "Playful": "あそびずきの",
+    "Serious": "まじめな",
+    "Calm": "おだやかな",
+    "Cheerful": "あかるい",
+    "Bored": "たいくつな",
+    "Confused": "まよっている",
+    "Energetic": "げんきな",
+
+    // Size & appearance
+    "Giant": "巨大な",
+    "Tiny": "とても小さな",
+    "Tall": "せの高い",
+    "Short": "せの低い",
+    "Round": "まるい",
+    "Square": "しかくい",
+    "Thin": "ほそい",
+    "Fat": "ふとった",
+    "Fluffy": "ふわふわの",
+    "Smooth": "なめらかな",
+    "Spiky": "とげとげしい",
+    "Fuzzy": "もじゃもじゃの",
+    "Glowing": "かがやく",
+    "Shiny": "ピカピカの",
+    "Rusty": "さびた",
+    "Colorful": "いろとりどりの",
+    "Pale": "あわい",
+    "Bright": "あかるい",
+    "Dark": "くらい",
+    "Striped": "しましまの",
+    "Spotted": "ぶちの",
+    "Transparent": "とうめいな",
+    "Metallic": "きんぞくの",
+    "Golden": "きんいろの",
+    "Silver": "ぎんいろの",
+    "Wooden": "きでできた",
+    "Plastic": "プラスチックの",
+
+    // Personality or behavior
+    "Friendly": "しんせつな",
+    "Grumpy": "きげんのわるい",
+    "Sneaky": "こっそりした",
+    "Clever": "かしこい",
+    "Clumsy": "ぶきような",
+    "Polite": "れいぎただしい",
+    "Loud": "うるさい",
+    "Quiet": "しずかな",
+    "Funny": "おもしろい",
+    "Smart": "かしこい",
+    "Silly": "ばかげた",
+    "Gentle": "やさしい",
+    "Wild": "やせいの",
+    "Greedy": "よくばりな",
+    "Kind": "しんせつな",
+    "Bold": "ゆうかんな",
+
+    // Creative / vibe adjectives
+    "Ancient": "こだいの",
+    "Frozen": "こおった",
+    "Burning": "もえている",
+    "Dreamy": "ゆめのような",
+    "Magic": "まほうの",
+    "Flying": "とんでいる",
+    "Invisible": "みえない",
+    "Floating": "ういている",
+    "Underwater": "すいちゅうの",
+    "Electric": "でんきの",
+    "Rainbow": "にじいろの",
+    "Shadowy": "かげのような",
+    "Orange": "オレンジの",
+    "Purple": "むらさきの",
+    "Yellow": "きいろい",
+    "Blue": "あおい",
+    "Red": "あかい",
+    "Green": "みどりの"
+  },
+	  
+	 subjects : {
+	  "Cat": "ネコ",
+	  "Dog": "イヌ",
+	  "Bird": "トリ",
+	  "Fish": "サカナ",
+	  "Elephant": "ゾウ",
+	  "Lion": "ライオン",
+	  "Tiger": "トラ",
+	  "Monkey": "サル",
+	  "Rabbit": "ウサギ",
+	  "Bear": "クマ",
+	  "Fox": "キツネ",
+	  "Panda": "パンダ",
+	  "Horse": "ウマ",
+	  "Frog": "カエル",
+	  "Penguin": "ペンギン",
+	  "Dolphin": "イルカ",
+	  "Giraffe": "キリン",
+	  "Sheep": "ヒツジ",
+	  "Chicken": "ニワトリ",
+	  "Pig": "ブタ",
+	  "Duck": "アヒル",
+	  "Bee": "ハチ",
+	  "Butterfly": "チョウ",
+	  "Snake": "ヘビ",
+	  "Turtle": "カメ",
+
+	  "Wizard": "魔法使い",
+	  "Knight": "騎士",
+	  "Pirate": "海賊",
+	  "Ninja": "忍者",
+	  "Astronaut": "宇宙飛行士",
+	  "Chef": "シェフ",
+	  "Doctor": "医者",
+	  "Farmer": "農夫",
+	  "Teacher": "先生",
+	  "Artist": "芸術家",
+	  "Detective": "探偵",
+	  "Soldier": "兵士",
+	  "Robot": "ロボット",
+	  "Alien": "エイリアン",
+	  "Ghost": "幽霊",
+	  "Clown": "ピエロ",
+	  "Superhero": "スーパーヒーロー",
+	  "Ballerina": "バレリーナ",
+	  "Magician": "マジシャン",
+	  "Explorer": "探検家",
+	  "King": "王さま",
+	  "Queen": "女王",
+	  "Thief": "どろぼう",
+	  "Scientist": "科学者",
+
+	  "Car": "車",
+	  "Bicycle": "自転車",
+	  "Rocket": "ロケット",
+	  "Train": "電車",
+	  "Boat": "船",
+	  "Airplane": "ひこうき",
+	  "Umbrella": "かさ",
+	  "Clock": "時計",
+	  "Candle": "ろうそく",
+	  "Book": "本",
+	  "Computer": "コンピューター",
+	  "Camera": "カメラ",
+	  "Telephone": "電話",
+	  "Guitar": "ギター",
+	  "Piano": "ピアノ",
+	  "Drum": "ドラム",
+	  "Balloon": "ふうせん",
+	  "Cupcake": "カップケーキ",
+	  "Ice Cream": "アイスクリーム",
+	  "Pizza": "ピザ",
+	  "Burger": "ハンバーガー",
+	  "Cake": "ケーキ",
+	  "Sandwich": "サンドイッチ",
+	  "Donut": "ドーナツ",
+	  "Cookie": "クッキー",
+
+	  "Tree": "木",
+	  "Flower": "花",
+	  "Mountain": "山",
+	  "Cloud": "雲",
+	  "Star": "星",
+	  "Sun": "太陽",
+	  "Moon": "月",
+	  "Rainbow": "にじ",
+	  "Volcano": "火山",
+	  "River": "川",
+	  "Ocean": "海",
+	  "Island": "島",
+	  "Snowman": "雪だるま",
+	  "Fire": "火",
+	  "Leaf": "葉",
+
+	  "Dragon": "ドラゴン",
+	  "Unicorn": "ユニコーン",
+	  "Mermaid": "人魚",
+	  "Fairy": "妖精",
+	  "Zombie": "ゾンビ",
+	  "Monster": "モンスター",
+	  "Robot Cat": "ロボットネコ",
+	  "Talking Fish": "話すサカナ",
+	  "Time Traveler": "時間旅行者",
+	  "Giant Snail": "巨大なカタツムリ",
+	  "Baby Dinosaur": "赤ちゃん恐竜"
+	},
+	actions : {
+	  "Sleeping": "ねている",
+	  "Eating": "食べている",
+	  "Running": "走っている",
+	  "Jumping": "ジャンプしている",
+	  "Dancing": "おどっている",
+	  "Singing": "歌っている",
+	  "Reading": "読んでいる",
+	  "Writing": "書いている",
+	  "Drawing": "絵をかいている",
+	  "Laughing": "わらっている",
+	  "Crying": "泣いている",
+	  "Smiling": "ほほえんでいる",
+	  "Thinking": "考えている",
+	  "Walking": "歩いている",
+	  "Talking": "話している",
+	  "Watching TV": "テレビを見ている",
+	  "Cooking": "料理している",
+	  "Playing": "遊んでいる",
+	  "Listening to music": "音楽を聴いている",
+	  "Cleaning": "掃除している",
+
+	  "Flying": "飛んでいる",
+	  "Swimming": "泳いでいる",
+	  "Climbing": "登っている",
+	  "Skating": "スケートしている",
+	  "Skiing": "スキーしている",
+	  "Surfing": "サーフィンしている",
+	  "Hiking": "ハイキングしている",
+	  "Riding a bike": "自転車に乗っている",
+	  "Riding a horse": "馬に乗っている",
+	  "Driving a car": "車を運転している",
+	  "Sailing a boat": "船を操縦している",
+	  "Fishing": "釣りをしている",
+	  "Camping": "キャンプしている",
+	  "Running through the forest": "森を走っている",
+	  "Jumping over a fence": "フェンスを飛び越えている",
+
+	  "Dancing in the rain": "雨の中で踊っている",
+	  "Flying a kite": "たこあげをしている",
+	  "Painting the sky": "空に絵を描いている",
+	  "Sleeping on a cloud": "雲の上で寝ている",
+	  "Sitting on the moon": "月に座っている",
+	  "Chasing stars": "星を追いかけている",
+	  "Talking to animals": "動物と話している",
+	  "Eating ice cream in space": "宇宙でアイスを食べている",
+	  "Time traveling": "時間旅行をしている",
+	  "Building a robot": "ロボットを作っている",
+	  "Casting a spell": "魔法をかけている",
+	  "Playing chess with a ghost": "幽霊とチェスをしている",
+	  "Swimming with dolphins": "イルカと泳いでいる",
+	  "Exploring a volcano": "火山を探検している",
+	  "Hiding under a rainbow": "虹の下に隠れている",
+	  "Planting magical seeds": "魔法の種を植えている",
+	  "Floating in zero gravity": "無重力で浮かんでいる",
+	  "Cooking pizza underwater": "水中でピザを作っている",
+
+	  "Meditating": "瞑想している",
+	  "Gardening": "庭仕事をしている",
+	  "Writing a letter": "手紙を書いている",
+	  "Making origami": "折り紙を作っている",
+	  "Painting a sunset": "夕日を描いている",
+	  "Watching the ocean": "海を見ている",
+	  "Taking a photo": "写真を撮っている",
+	  "Playing the piano": "ピアノを弾いている",
+
+	  "Juggling": "ジャグリングしている",
+	  "Sneezing": "くしゃみをしている",
+	  "Snoring": "いびきをかいている",
+	  "Spinning around": "くるくる回っている",
+	  "Tickling someone": "だれかをくすぐっている",
+	  "Eating noodles": "麺を食べている",
+	  "Blowing bubbles": "シャボン玉を吹いている",
+	  "Wearing funny glasses": "おかしなメガネをかけている",
+	  "Building a sandcastle": "砂の城を作っている",
+
+	  "Arguing": "口げんかしている",
+	  "Hugging": "抱き合っている",
+	  "Helping": "助けている",
+	  "Teaching": "教えている",
+	  "Chasing": "追いかけている",
+	  "Racing": "レースしている",
+	  "Fighting": "戦っている",
+	  "Playing catch": "キャッチボールをしている",
+	  "Sharing food": "食べ物を分け合っている",
+	  "Dancing together": "一緒に踊っている",
+	  "Running away": "逃げている",
+	  "Celebrating": "お祝いしている"
+	}
+};
+
+
+
 	
 const timers = { easy: 40, hard: 60, difficult : 90, pro: 120 };
 
@@ -97,19 +394,57 @@ class CooperativeDrawing {
     this.gameTimer = null;
     this.prompt = '';
 
-    this.startGame();
+    //this.startGame();
   }
 
+	//translation handler
+	async translateTopic(text, targetLang) {
+  if (targetLang !== 'ja') return text;
+
+  try {
+    //split the English topic into parts
+    const words = text.replace(/^A[n]?\s+/i, '').split(' ');
+
+    let adj = null, sub = null, act = null;
+
+    //match words against our dictionary maps
+    for (const word of words) {
+      if (jpMap.adjectives[word]) adj = jpMap.adjectives[word];
+      if (jpMap.subjects[word]) sub = jpMap.subjects[word];
+      if (jpMap.actions[word]) act = jpMap.actions[word];
+    }
+
+    //cconstruct Japanese sentence pattern
+    //base structure: "<subject> が <adjective> です" or "<subject> が <action>"
+    let phrase = '';
+
+    if (sub && act) {
+      phrase = `${sub}が${act}`;
+    } else if (adj && sub) {
+      phrase = `${adj}${sub}`;
+    } else if (sub) {
+      phrase = sub;
+    } else {
+      phrase = text; //fallback
+    }
+
+    return phrase;
+  } catch (err) {
+    console.error("Japanese translation error:", err);
+    return text;
+  }
+}
+
+
   // Mad Libs topic generator (No AI)
-  generateTopic() {
-    const { adjectives, subjects, actions, places } = wordLists;
+  async generateTopic() {
+    const { adjectives, subjects, actions } = wordLists;
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
     const getArticle = w => /^[aeiou]/i.test(w) ? 'An' : 'A';
 
-    let topic = '';
     const difficulty = this.difficulty.toLowerCase();
 
-    // --- pick english words based on difficulty ---
+    //
     let adj = '', sub = '', act = '', tone = '', place = '';
 
     switch (difficulty) {
@@ -124,63 +459,32 @@ class CooperativeDrawing {
         adj = pick(adjectives);
         sub = pick(subjects);
         act = pick(actions);
-      break;
+        break;
       case 'pro': 
       default:
         adj = pick(adjectives);
         sub = pick(subjects);
         act = pick(actions);
         if (Math.random() < 0.5) tone = pick(["Retro", "Futuristic", "Fantasy", "Cyberpunk", "Cartoonish"]);
-        if (Math.random() < 0.9 && places) place = pick(places);
+        if (wordLists.places && Math.random() < 0.9) place = pick(wordLists.places);
         break;
     }
 
-    // --- construct the topic string based on language ---
-    if (this.lang === 'ja') {
-        // --- Japanese Mode ---
-        const adj_ja = wordTranslations[adj] || adj;
-        const sub_ja = wordTranslations[sub] || sub;
-        const act_ja = wordTranslations[act] || act;
-        
-        //japanese grammar rules (Adjective + Noun + ga + Verb)
-        let parts = [];
-        if (adj_ja) parts.push(adj_ja);
-        if (sub_ja) parts.push(sub_ja);
-        
-        let subjectPart = parts.join('');
-        
-        if (act_ja) {
-            topic = `${subjectPart}が${act_ja}`;
-        } else {
-            topic = subjectPart;
-        }
-        topic = `「${topic}」`; //japanese quotes for style
+    // --- construct the English topic string ---
+    let mainPhrase = '';
+    if (adj && sub && act) mainPhrase = `${adj} ${sub} ${act}`;
+    else if (adj && sub) mainPhrase = `${adj} ${sub}`;
+    else if (sub) mainPhrase = `${sub}`;
 
-    } else {
-        // --- english Mode ---
-        let mainPhrase = '';
-        if (adj && sub && act) mainPhrase = `${adj} ${sub} ${act}`;
-        else if (adj && sub) mainPhrase = `${adj} ${sub}`;
-        else if (sub) mainPhrase = `${sub}`;
+    let topic = `${getArticle(mainPhrase)} ${mainPhrase}`;
+    if (tone) topic = `${getArticle(tone)} ${tone} ${topic.split(' ').slice(1).join(' ')}`;
+    if (place) topic += ` in ${place}`; // added "in" for better phrasing
 
-        topic = `${getArticle(mainPhrase)} ${mainPhrase}`;
-        if (tone) topic = `${getArticle(tone)} ${tone} ${topic.split(' ').slice(1).join(' ')}`;
-        if (place) topic += ` ${place}`;
-    }
+    // --- translate the final topic if needed ---
+    const finalTopic = await this.translateTopic(topic, this.lang);
 
-    //rare mutation for fun that freaking works for both languages conceptually coz im a genius lol jk im fked
-    if (Math.random() < 0.01) {
-        const sub2 = pick(subjects);
-        if (this.lang === 'ja') {
-            const sub2_ja = wordTranslations[sub2] || sub2;
-            topic += ` と ${sub2_ja}`;
-        } else {
-            topic += ` and ${getArticle(sub2)} ${sub2}`;
-        }
-    }
-
-    console.log(`Generated topic (${this.difficulty}, ${this.lang}): ${topic}`);
-    return topic;
+    console.log(`Generated topic (${this.difficulty}, ${this.lang}): ${finalTopic}`);
+    return finalTopic;
   }
 
   //keyword-Based Scoring (No AI)
@@ -228,13 +532,13 @@ class CooperativeDrawing {
         }
     } catch (err) {
         console.error("Error processing image for scoring:", err);
-        return { score: 50, feedback: "Error analyzing the drawing." };
+        return { score: 50, feedback: "Error aanalyzing the drawing." };
     }
     return { score: Math.floor(Math.min(score, 99)), feedback: feedback.trim() };
   }
 
-  startGame() {
-    this.prompt = this.generateTopic(); //use the new topic generator
+  async initialize() {
+    this.prompt = await this.generateTopic(); // using await here
     this.timeLimit = timers[this.difficulty] || timers['easy'];
     const { layout, segments } = this.calculateSegments(this.players.length);
     

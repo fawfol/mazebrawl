@@ -10,7 +10,7 @@ class GameManager {
     this.activeGames = new Map();
   }
 
-  startNewGame(roomId, gameType, players, lang, callback, difficulty = 'easy') {
+  async startNewGame(roomId, gameType, players, lang, callback, difficulty = 'easy') {
     if (this.activeGames.has(roomId)) {
       if (callback) callback({ success: false, message: 'A game is already active in this room.' });
       return;
@@ -32,11 +32,13 @@ class GameManager {
     }
 
     this.activeGames.set(roomId, gameInstance);
+    if (gameInstance.initialize) {
+        await gameInstance.initialize();
+    }
     console.log(`${gameType} game started in room ${roomId}`);
     if (callback) callback({ success: true });
   }
 
-  // --- CORRECTED AND MERGED FUNCTION ---
   handleGameEvent(playerId, eventType, data) {
     const roomEntry = Array.from(this.rooms.entries()).find(([roomId, room]) =>
       room.players.some(p => p.id === playerId)

@@ -124,49 +124,93 @@ io.on('connection', (socket) => {
     }
   });
   
-	socket.on('selectGame', (gameType, options, callback) => {
-		let playerRoomId = null;
-		let playerRoom = null;
-		for (const [roomId, room] of rooms.entries()) {
-		    if (room.players.some(p => p.id === socket.id)) {
-		        playerRoomId = roomId;
-		        playerRoom = room;
-		        break;
-		    }
+  socket.on('selectGame', (gameType, options, callback) => {
+	  let playerRoomId = null;
+	  let playerRoom = null;
+
+	  for (const [roomId, room] of rooms.entries()) {
+		if (room.players.some(p => p.id === socket.id)) {
+		  playerRoomId = roomId;
+		  playerRoom = room;
+		  break;
 		}
+	  }
 
-		if (playerRoom && playerRoom.leaderId === socket.id) {
-		    const gameLang = playerRoom.language || 'en';
-		    
-		    if (gameType === 'TypingGame') {
-		        const preCountdownDuration = 10;
-		        io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType });
-		        const gameStartTimer = setTimeout(() => {
-		            activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, gameLang, callback);
-		            if (playerRoom) delete playerRoom.gameStartTimer;
-		        }, preCountdownDuration * 1000);
-		        playerRoom.gameStartTimer = gameStartTimer;
+	  if (playerRoom && playerRoom.leaderId === socket.id) {
+		const gameLang = playerRoom.language || 'en';
 
-		    } else if (gameType === 'DrawingGame') {
-		          const preCountdownDuration = 5; //give 5 seconds to show "Game Starting"
-		          // we tell the client to switch to the 'DrawingGameScene'
-		          io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType: 'DrawingGameScene' });
-		          
-		          //we wait for the countdown duration before actually creating the game instance
-		          const gameStartTimer = setTimeout(() => {
-		              activeGames.startNewGame(playerRoomId, 'CooperativeDrawing', playerRoom.players, gameLang, callback, options.difficulty);
-		              if (playerRoom) delete playerRoom.gameStartTimer;
-		          }, preCountdownDuration * 1000);
-		          playerRoom.gameStartTimer = gameStartTimer;
+		if (gameType === 'TypingGame') {
+		  const preCountdownDuration = 10;
+		  io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType });
+		  const gameStartTimer = setTimeout(() => {
+		    activeGames.startNewGame(playerRoomId, 'TypingRace', playerRoom.players, gameLang, callback);
+		    if (playerRoom) delete playerRoom.gameStartTimer;
+		  }, preCountdownDuration * 1000);
+		  playerRoom.gameStartTimer = gameStartTimer;
 
-		    } else {
-		          if (callback) callback({ success: false, message: 'Invalid game type selected.' });
-		    }
+		} else if (gameType === 'DrawingGame') {
+		  playerRoom.lastDifficulty = options.difficulty; 
+
+		  const preCountdownDuration = 5;
+		  io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType: 'DrawingGameScene' });
+
+		  const gameStartTimer = setTimeout(() => {
+		    activeGames.startNewGame(
+		      playerRoomId,
+		      'CooperativeDrawing',
+		      playerRoom.players,
+		      gameLang,
+		      callback,
+		      options.difficulty
+		    );
+		    if (playerRoom) delete playerRoom.gameStartTimer;
+		  }, preCountdownDuration * 1000);
+
+		  playerRoom.gameStartTimer = gameStartTimer;
+
 		} else {
-		    if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
+		  if (callback) callback({ success: false, message: 'Invalid game type selected.' });
 		}
+	  } else {
+		if (callback) callback({ success: false, message: 'Cannot start game: permission denied or room not found.' });
+	  }
 	});
-  
+	
+	socket.on('leaderSkipDrawingTutorial', () => {
+	  let playerRoom = null;
+	  let playerRoomId = null;
+
+	  for (const [roomId, room] of rooms.entries()) {
+		if (room.players.some(p => p.id === socket.id)) {
+		  playerRoom = room;
+		  playerRoomId = roomId;
+		  break;
+		}
+	  }
+
+	  if (playerRoom && playerRoom.leaderId === socket.id && playerRoom.gameStartTimer) {
+		console.log(`Leader in room ${playerRoomId} is skipping the drawing tutorial.`);
+		
+		//clear the scheduled timer
+		clearTimeout(playerRoom.gameStartTimer);
+		delete playerRoom.gameStartTimer;
+		//broadcast to all clients that the tutorial is skipped
+		io.to(playerRoomId).emit('drawingTutorialSkipped');
+		//start game imme
+		const gameLang = playerRoom.language || 'en';
+		activeGames.startNewGame(
+		  playerRoomId,
+		  'CooperativeDrawing',
+		  playerRoom.players,
+		  gameLang,
+		  () => {},
+		  playerRoom.lastDifficulty || 'easy'
+		);
+	  }
+	});
+
+
+  //typing game precountdwon skip
   socket.on('leaderSkipTutorial', () => {
     let playerRoomId = null;
     let playerRoom = null;
