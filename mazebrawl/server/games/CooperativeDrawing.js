@@ -378,7 +378,7 @@ const jpMap = {
 
 
 	
-const timers = { easy: 40, hard: 60, difficult : 90, pro: 120 };
+const timers = { easy: 60, hard: 90, difficult : 120, pro: 160 };
 
 class CooperativeDrawing {
 

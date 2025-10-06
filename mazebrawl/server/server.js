@@ -151,7 +151,7 @@ io.on('connection', (socket) => {
 		} else if (gameType === 'DrawingGame') {
 		  playerRoom.lastDifficulty = options.difficulty; 
 
-		  const preCountdownDuration = 5;
+		  const preCountdownDuration = 70;
 		  io.to(playerRoomId).emit('preCountdown', { duration: preCountdownDuration, gameType: 'DrawingGameScene' });
 
 		  const gameStartTimer = setTimeout(() => {

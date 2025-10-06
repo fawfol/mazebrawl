@@ -84,6 +84,7 @@
   "tutorialDrawingStep4": "4. Work together to create a masterpiece before the timer runs out!",
   "tutorialDrawingWaiting": "Waiting for game to start...",
   "tutorialDrawingSkipButton": "Skip Tutorial & Start",
-  "tutorialDrawingWaitingForLeaderSkip": "Waiting for Leader..."
+  "tutorialDrawingWaitingForLeaderSkip": "Waiting for Leader...",
+  "tutorialDrawingCountdown": "This screen will close automatically in {countdown} seconds..."
 }
 

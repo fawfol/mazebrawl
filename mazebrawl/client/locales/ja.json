@@ -84,6 +84,6 @@
   "tutorialDrawingStep4": "4. 時間切れになる前に、協力して傑作を完成させましょう！",
   "tutorialDrawingWaiting": "ゲームの開始を待っています...",
   "tutorialDrawingSkipButton": "チュートリアルをスキップして開始",
-  "tutorialDrawingWaitingForLeaderSkip": "リーダーを待っています..."
-
+  "tutorialDrawingWaitingForLeaderSkip": "リーダーを待っています...",
+  "tutorialDrawingCountdown": "この画面は{countdown}秒後に自動的に閉じます..."
 }

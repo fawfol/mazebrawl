@@ -10,6 +10,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.players = data.players;
         this.leaderId = data.leaderId;
         this.language = data.language || 'en';
+        this.preCountdownDuration = data.preCountdown || 60;
         
         //game-specific data from server
         this.prompt = '';
@@ -33,6 +34,7 @@ export default class DrawingGameScene extends Phaser.Scene {
 		this.createUI();
         this.showTutorial();
         this.setupSocketListeners();
+        this.startTutorialCountdown();
     }
 
     setupSocketListeners() {
@@ -85,6 +87,30 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.startTimer();
         this.initializeCanvases();
     }
+    
+    startTutorialCountdown() {
+        let timeLeft = this.preCountdownDuration;
+        const countdownEl = document.getElementById('tutorial-countdown-text');
+
+        if (!countdownEl) return;
+
+        const updateText = () => {
+            countdownEl.innerText = this.languageManager.get('tutorialDrawingCountdown', { countdown: timeLeft });
+        };
+        
+        updateText(); // Set initial text
+
+        const interval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft >= 0) {
+                updateText();
+            } else {
+                clearInterval(interval);
+            }
+        }, 1000);
+    }
+
+    
     showTutorial() {
         const overlay = document.createElement('div');
         overlay.id = 'tutorial-overlay';
@@ -99,8 +125,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         Object.assign(content.style, {
             maxWidth: '600px', textAlign: 'center'
         });
-
-        content.innerHTML = `
+         content.innerHTML = `
             <h2>${this.languageManager.get('tutorialDrawingTitle')}</h2>
             <ul style="text-align: left; list-style-position: inside; padding: 0 20px;">
                 <li style="margin-bottom: 10px;">${this.languageManager.get('tutorialDrawingStep1')}</li>
@@ -108,7 +133,10 @@ export default class DrawingGameScene extends Phaser.Scene {
                 <li style="margin-bottom: 10px;">${this.languageManager.get('tutorialDrawingStep3')}</li>
                 <li style="margin-bottom: 10px;">${this.languageManager.get('tutorialDrawingStep4')}</li>
             </ul>
-            <p style="margin-top: 30px; font-style: italic;">${this.languageManager.get('tutorialDrawingWaiting')}</p>
+            
+            <p id="tutorial-countdown-text" style="margin-top: 30px; font-size: 0.9em;"></p>
+
+            <p style="margin-top: 10px; font-style: italic;">${this.languageManager.get('tutorialDrawingWaiting')}</p>
         `;
         
         const skipBtn = document.createElement('button');
