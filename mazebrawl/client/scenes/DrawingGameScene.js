@@ -30,25 +30,25 @@ export default class DrawingGameScene extends Phaser.Scene {
     async create() {
         this.languageManager = new LanguageManager(this);
         await this.languageManager.loadLanguage(this.language);
-
+		this.createUI();
+        this.showTutorial();
         this.setupSocketListeners();
-        this.createUI();
     }
 
     setupSocketListeners() {
+        //hides the tutorial and then starts the game
         this.socket.off('startGame');
         this.socket.on('startGame', (gameType, prompt, extra) => {
             if (gameType !== 'DrawingGameScene') return;
-            this.prompt = prompt;
-            this.timeLimit = extra.timeLimit;
-            this.segments = extra.segments;
-            this.layout = extra.layout;
-            this.playerCount = extra.playerCount;
-            this.mySegmentIndex = this.segments.find(s => s.playerId === this.socket.id)?.segmentIndex ?? -1;
             
-            this.updatePromptText();
-            this.startTimer();
-            this.initializeCanvases();
+            this.hideTutorialAndStartGame(prompt, extra);
+        });
+
+        //listener for the skip event
+        this.socket.off('drawingTutorialSkipped');
+        this.socket.on('drawingTutorialSkipped', () => {
+            const tutorial = document.getElementById('tutorial-overlay');
+            if (tutorial) tutorial.remove();
         });
 
         this.socket.on('drawingUpdate', ({ playerId, canvasData }) => {
@@ -64,11 +64,71 @@ export default class DrawingGameScene extends Phaser.Scene {
         });
         
         this.socket.on('playerStatusUpdate', ({ playerId }) => {
-        const segmentWrapper = this.otherCanvases[playerId]?.parentElement;
-        if (segmentWrapper) {
-            segmentWrapper.classList.add('player-finished');
+            const segmentWrapper = this.otherCanvases[playerId]?.parentElement;
+            if (segmentWrapper) {
+                segmentWrapper.classList.add('player-finished');
+            }
+        });
+    }
+    hideTutorialAndStartGame(prompt, extra) {
+        const tutorial = document.getElementById('tutorial-overlay');
+        if (tutorial) tutorial.remove();
+
+        this.prompt = prompt;
+        this.timeLimit = extra.timeLimit;
+        this.segments = extra.segments;
+        this.layout = extra.layout;
+        this.playerCount = extra.playerCount;
+        this.mySegmentIndex = this.segments.find(s => s.playerId === this.socket.id)?.segmentIndex ?? -1;
+        
+        this.updatePromptText();
+        this.startTimer();
+        this.initializeCanvases();
+    }
+    showTutorial() {
+        const overlay = document.createElement('div');
+        overlay.id = 'tutorial-overlay';
+        Object.assign(overlay.style, {
+            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: '1000',
+            color: 'white', padding: '20px', boxSizing: 'border-box'
+        });
+
+        const content = document.createElement('div');
+        Object.assign(content.style, {
+            maxWidth: '600px', textAlign: 'center'
+        });
+
+        content.innerHTML = `
+            <h2>${this.languageManager.get('tutorialDrawingTitle')}</h2>
+            <ul style="text-align: left; list-style-position: inside; padding: 0 20px;">
+                <li style="margin-bottom: 10px;">${this.languageManager.get('tutorialDrawingStep1')}</li>
+                <li style="margin-bottom: 10px;">${this.languageManager.get('tutorialDrawingStep2')}</li>
+                <li style="margin-bottom: 10px;">${this.languageManager.get('tutorialDrawingStep3')}</li>
+                <li style="margin-bottom: 10px;">${this.languageManager.get('tutorialDrawingStep4')}</li>
+            </ul>
+            <p style="margin-top: 30px; font-style: italic;">${this.languageManager.get('tutorialDrawingWaiting')}</p>
+        `;
+        
+        const skipBtn = document.createElement('button');
+        skipBtn.style.marginTop = '20px';
+
+        if (this.socket.id === this.leaderId) {
+            skipBtn.innerText = this.languageManager.get('tutorialDrawingSkipButton');
+            skipBtn.disabled = false; // Leader's button is enabled
+            skipBtn.onclick = () => {
+                skipBtn.disabled = true;
+                this.socket.emit('leaderSkipDrawingTutorial');
+            };
+        } else {
+            skipBtn.innerText = this.languageManager.get('tutorialDrawingWaitingForLeaderSkip');
+            skipBtn.disabled = true; // Non-leader's button is disabled
         }
-    });
+        
+        content.appendChild(skipBtn);
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
     }
 
     createUI() {
@@ -77,28 +137,37 @@ export default class DrawingGameScene extends Phaser.Scene {
         container.className = 'draw-container';
         document.body.appendChild(container);
 
-        //header
         const header = document.createElement('div');
         header.className = 'draw-header';
         this.promptText = document.createElement('h2');
         this.promptText.innerText = this.languageManager.get('waitingForPrompt');
-        this.timerText = document.createElement('div');
-        this.timerText.className = 'draw-timer';
+
+        const timerWrapper = document.createElement('div');
+        timerWrapper.className = 'draw-timer-wrapper';
+
+        timerWrapper.innerHTML = `
+            <svg class="draw-timer-svg" viewBox="0 0 36 36">
+                <circle class="timer-circle timer-track" cx="18" cy="18" r="16"></circle>
+                <circle class="timer-circle timer-progress" cx="18" cy="18" r="16"></circle>
+            </svg>
+            <div class="timer-number"></div>
+        `;
+        
+        this.timerProgressCircle = timerWrapper.querySelector('.timer-progress');
+        this.timerNumberEl = timerWrapper.querySelector('.timer-number');
+        
         header.appendChild(this.promptText);
-        header.appendChild(this.timerText);
+        header.appendChild(timerWrapper);
         container.appendChild(header);
 
-        //main content (Canvas + Tools)
         const main = document.createElement('div');
         main.className = 'draw-main';
         container.appendChild(main);
 
-        //canvasarea
         this.canvasContainer = document.createElement('div');
         this.canvasContainer.className = 'draw-canvas-container';
         main.appendChild(this.canvasContainer);
 
-        // tools
         this.createToolbar(main);
     }
 
@@ -200,17 +269,43 @@ export default class DrawingGameScene extends Phaser.Scene {
     }
      
     startTimer() {
+        const radius = this.timerProgressCircle.r.baseVal.value;
+        const circumference = 2 * Math.PI * radius;
+
+        this.timerProgressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        this.timerProgressCircle.style.strokeDashoffset = circumference;
+
         let timeLeft = this.timeLimit;
-        this.timerText.innerText = timeLeft;
+        
+        const setProgress = (percent) => {
+            const offset = circumference - percent * circumference;
+            this.timerProgressCircle.style.strokeDashoffset = offset;
+        };
+
+        setProgress(timeLeft / this.timeLimit);
+        this.timerNumberEl.innerText = timeLeft;
+
         const interval = setInterval(() => {
             timeLeft--;
-            this.timerText.innerText = timeLeft;
+
+            //update the number and the progress circle
+            this.timerNumberEl.innerText = timeLeft;
+            setProgress(timeLeft / this.timeLimit);
+
+            //change colors based on time remaining
+            this.timerProgressCircle.classList.remove('warn', 'danger');
+            if (timeLeft <= 10) {
+                this.timerProgressCircle.classList.add('danger');
+            } else if (timeLeft <= 20) {
+                this.timerProgressCircle.classList.add('warn');
+            }
+
             if (timeLeft <= 0) {
                 clearInterval(interval);
             }
         }, 1000);
     }
-     
+
     initializeCanvases() {
         this.canvasContainer.innerHTML = '';
         this.otherCanvases = {};

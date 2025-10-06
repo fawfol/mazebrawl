@@ -76,6 +76,14 @@
   "resultsDifficulty": "Difficulty: <strong>{difficulty}</strong>",
   "resultsScore": "SCORE: <span class=\"ai-score\">{score}%</span>",
   "resultsDrawnBy": "<strong>DRAWN BY:</strong> {playerNames}",
-  "resultsDownloadButton": "Download"
+  "resultsDownloadButton": "Download",
+  "tutorialDrawingTitle": "How to Play: Co-op Drawing",
+  "tutorialDrawingStep1": "1. You will be given a secret topic to draw together (e.g., \"A Happy Cat Eating\").",
+  "tutorialDrawingStep2": "2. The canvas is split into sections. Each player gets one piece of the puzzle.",
+  "tutorialDrawingStep3": "3. You can ONLY draw in your assigned section. You will see your teammates draw in real-time.",
+  "tutorialDrawingStep4": "4. Work together to create a masterpiece before the timer runs out!",
+  "tutorialDrawingWaiting": "Waiting for game to start...",
+  "tutorialDrawingSkipButton": "Skip Tutorial & Start",
+  "tutorialDrawingWaitingForLeaderSkip": "Waiting for Leader..."
 }
 

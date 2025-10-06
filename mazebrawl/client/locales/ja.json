@@ -52,7 +52,7 @@
   "logNewLeader": "リーダーが退出しました — 新しいリーダーは{name}です",
   "logYouLeft": "ルームを退出しました。",
   "logLanguageChanged": "リーダーが言語を{lang}に変更しました。",
-  "selectDifficulty" : "難易度",
+  "selectDifficulty" : "難易度 (LEVEL)",
   "difficultyEasy": "簡単",
   "difficultyHard": "まあまあ",
   "difficultyDifficult": "難しい",
@@ -76,6 +76,14 @@
   "resultsDifficulty": "難易度: <strong>{difficulty}</strong>",
   "resultsScore": "スコア: <span class=\"ai-score\">{score}%</span>",
   "resultsDrawnBy": "<strong>作画者:</strong> {playerNames}",
-  "resultsDownloadButton": "ダウンロード"
+  "resultsDownloadButton": "ダウンロード",
+  "tutorialDrawingTitle": "遊び方: 協力お絵かき",
+  "tutorialDrawingStep1": "1. 秘密のお題が出されます（例：「嬉しい猫が食べている」）。みんなで協力してその絵を描きましょう。",
+  "tutorialDrawingStep2": "2. キャンバスはセクションに分かれています。各プレイヤーはパズルの一片を担当します。",
+  "tutorialDrawingStep3": "3. あなたは自分の担当セクションにしか描けません。チームメイトが描く様子はリアルタイムで見えます。",
+  "tutorialDrawingStep4": "4. 時間切れになる前に、協力して傑作を完成させましょう！",
+  "tutorialDrawingWaiting": "ゲームの開始を待っています...",
+  "tutorialDrawingSkipButton": "チュートリアルをスキップして開始",
+  "tutorialDrawingWaitingForLeaderSkip": "リーダーを待っています..."
 
 }

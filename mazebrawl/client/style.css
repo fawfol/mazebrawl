@@ -427,6 +427,59 @@ input[type='text']:focus {
 }
 
 /* =========================================
+   Drawing Game Timer Styles
+   ========================================= */
+.draw-timer-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 10px auto; /* Center it in the header */
+}
+
+.draw-timer-svg {
+  transform: rotate(-90deg); /* Start the circle at the 12 o'clock position */
+  width: 100%;
+  height: 100%;
+}
+
+.timer-circle {
+  fill: none;
+  stroke-width: 8;
+}
+
+.timer-track {
+  stroke: #555; /* The background track of the circle */
+}
+
+.timer-progress {
+  stroke: #4CAF50; /* Start with green */
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 0.5s ease;
+}
+
+/* Color change classes */
+.timer-progress.warn {
+  stroke: #ffc107; /* Yellow */
+}
+.timer-progress.danger {
+  stroke: #f44336; /* Red */
+}
+
+.timer-number {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* =========================================
    Bottom Toolbar Styling 
    ========================================= */
 
