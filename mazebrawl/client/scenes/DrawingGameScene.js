@@ -359,40 +359,8 @@ export default class DrawingGameScene extends Phaser.Scene {
         }
     }
      
-    showEvaluationScreen() {
-        //first, combine all the canvases into one image
-        const cols = Math.ceil(Math.sqrt(this.playerCount));
-        const rows = Math.ceil(this.playerCount / cols);
-        const segmentWidth = this.myCanvas.width;
-        const segmentHeight = this.myCanvas.height;
-
-        const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = segmentWidth * cols;
-        finalCanvas.height = segmentHeight * rows;
-        const finalCtx = finalCanvas.getContext('2d');
-        finalCtx.fillStyle = '#FFFFFF';
-        finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-
-        this.segments.forEach(seg => {
-            const col = seg.segmentIndex % cols;
-            const row = Math.floor(seg.segmentIndex / cols);
-            const x = col * segmentWidth;
-            const y = row * segmentHeight;
-
-            let sourceElement;
-            if (seg.playerId === this.socket.id) {
-                sourceElement = this.myCanvas;
-            } else {
-                sourceElement = this.otherCanvases[seg.playerId];
-            }
-
-            if (sourceElement && sourceElement.width > 0 && sourceElement.height > 0) {
-                finalCtx.drawImage(sourceElement, x, y, segmentWidth, segmentHeight);
-            }
-        });
-        
-        this.socket.emit('submitDrawing', finalCanvas.toDataURL());
-        this.showOverlay(`<h2>${this.languageManager.get('evaluatingTitle')}</h2>    <p>${this.languageManager.get('evaluatingSubtitle')}</p>`);
+     showEvaluationScreen() {
+        this.showOverlay(`<h2>${this.languageManager.get('evaluatingTitle')}</h2><p>${this.languageManager.get('evaluatingSubtitle')}</p>`);
     }
 
     showFinalResults(results) {

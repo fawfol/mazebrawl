@@ -180,7 +180,7 @@ export default class GameScene extends Phaser.Scene {
             color: 'red',
             fontWeight: 'bold',
             textAlign: 'center',
-            margin: '0 0 10px 0' // Adds some space below the message
+            margin: '0 0 10px 0' 
         });
         modal.appendChild(devMessage);        
 
@@ -191,10 +191,11 @@ export default class GameScene extends Phaser.Scene {
         title.style.textAlign = 'center';
         modal.appendChild(title);
 
-        // Define difficulties with their server value and language key
+        
         const difficulties = [
-            { value: 'easy', langKey: 'difficultyEasy' },
-            { value: 'hard', langKey: 'difficultyHard' },
+            { value: 'easy', langKey: 'difficultyEasy' },          
+    		{ value: 'hard', langKey: 'difficultyHard' },
+            { value: 'difficult', langKey: 'difficultydifficult' },
             { value: 'pro',  langKey: 'difficultyPro' }
         ];
 
