@@ -55,6 +55,7 @@
   "selectDifficulty" : "DIFFICULTY LEVEL",
   "difficultyEasy": "Easy",
   "difficultyHard": "Hard",
+  "difficultyDifficult": "Difficult",
   "difficultyPro": "Pro",
   "pointsGainedText": "+{points} pts",
   "totalScoreTitle": "Total Score",
