@@ -73,6 +73,7 @@
   "evaluatingTitle": "<h2>あなたの傑作を評価中...</h2>",
   "evaluatingSubtitle": "<p>当社の高度なAIがあなたの作品を審査しています！</p>",
   "resultsTitle": "結果",
+  "resultsDifficulty": "難易度: <strong>{difficulty}</strong>",
   "resultsScore": "スコア: <span class=\"ai-score\">{score}%</span>",
   "resultsDrawnBy": "<strong>作画者:</strong> {playerNames}",
   "resultsDownloadButton": "ダウンロード"

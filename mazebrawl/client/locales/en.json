@@ -73,6 +73,7 @@
   "evaluatingTitle": "<h2>Evaluating your masterpiece...</h2>",
   "evaluatingSubtitle": "<p>Our highly sophisticated AI is judging your work!</p>",
   "resultsTitle": "Results",
+  "resultsDifficulty": "Difficulty: <strong>{difficulty}</strong>",
   "resultsScore": "SCORE: <span class=\"ai-score\">{score}%</span>",
   "resultsDrawnBy": "<strong>DRAWN BY:</strong> {playerNames}",
   "resultsDownloadButton": "Download"

@@ -329,7 +329,8 @@ class CooperativeDrawing {
           prompt: this.prompt,
           finalImage: finalImage,
           score: result.score,
-          feedback: result.feedback
+          feedback: result.feedback,
+          difficulty: this.difficulty
       });
       setTimeout(() => {
         if (this.onGameEnd) { this.onGameEnd(); }

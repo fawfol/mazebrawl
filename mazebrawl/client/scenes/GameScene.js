@@ -195,7 +195,7 @@ export default class GameScene extends Phaser.Scene {
         const difficulties = [
             { value: 'easy', langKey: 'difficultyEasy' },          
     		{ value: 'hard', langKey: 'difficultyHard' },
-            { value: 'difficult', langKey: 'difficultydifficult' },
+            { value: 'difficult', langKey: 'difficultyDifficult' },
             { value: 'pro',  langKey: 'difficultyPro' }
         ];
 

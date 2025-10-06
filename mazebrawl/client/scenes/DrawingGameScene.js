@@ -368,7 +368,6 @@ export default class DrawingGameScene extends Phaser.Scene {
         const header = document.querySelector('.draw-header');
         if (header) header.style.display = 'none';
         
-        //hide the original canvas container and toolbar.
         if (this.canvasContainer) this.canvasContainer.style.display = 'none';
         const toolbar = document.querySelector('.draw-toolbar');
         if (toolbar) toolbar.style.display = 'none'; 
@@ -376,11 +375,9 @@ export default class DrawingGameScene extends Phaser.Scene {
         const mainContainer = document.querySelector('.draw-main');
         if (mainContainer) mainContainer.classList.add('results-active');
 
-        // Create the new, unified results panel.
         const resultsPanel = document.createElement('div');
         resultsPanel.id = 'results-panel';
 
-        //topic add
         const title = document.createElement('h2');
         title.innerText = this.languageManager.get('resultsTitle');
         resultsPanel.appendChild(title);
@@ -388,7 +385,7 @@ export default class DrawingGameScene extends Phaser.Scene {
 		const promptEl = document.createElement('p');
 		promptEl.innerHTML = this.languageManager.get('drawingTopic', { prompt: `<strong>"${results.prompt}"</strong>` });
 		resultsPanel.appendChild(promptEl);
-        //add final combined image INSIDE the panel
+        
         const finalImage = document.createElement('img');
         finalImage.src = results.finalImage;
         Object.assign(finalImage.style, {
@@ -398,20 +395,26 @@ export default class DrawingGameScene extends Phaser.Scene {
         });
         resultsPanel.appendChild(finalImage);
 
-        //add ai score and feedback
         const scoreEl = document.createElement('h3');
 		scoreEl.innerHTML = this.languageManager.get('resultsScore', { score: results.score });
 		resultsPanel.appendChild(scoreEl);
+        
+        // --- get the translated difficulty name ---
+        const difficultyKey = 'difficulty' + results.difficulty.charAt(0).toUpperCase() + results.difficulty.slice(1);
+        const translatedDifficulty = this.languageManager.get(difficultyKey);
 
-        //add list of cooperating players
+        // --- display the difficulty on the results panel ---
+        const difficultyEl = document.createElement('p');
+        difficultyEl.innerHTML = this.languageManager.get('resultsDifficulty', { difficulty: translatedDifficulty });
+        difficultyEl.style.marginTop = '15px';
+        resultsPanel.appendChild(difficultyEl);
+
         const playersEl = document.createElement('div');
 		const playerNames = this.players.map(p => p.name).join(', ');
 		playersEl.innerHTML = this.languageManager.get('resultsDrawnBy', { playerNames: playerNames });
-
-        playersEl.style.marginTop = '15px';
+        playersEl.style.marginTop = '5px'; // Adjusted margin
         resultsPanel.appendChild(playersEl);
         
-         //add the actionbuttons (exit n download)
        const buttonWrapper = document.createElement('div');
        buttonWrapper.className = 'results-buttons';
 
@@ -427,61 +430,54 @@ export default class DrawingGameScene extends Phaser.Scene {
                 language: this.language
             });
         };
-        //resultsPanel.appendChild(exitBtn);
         
-        // CREATE DOWNLOAD BUTTON
         const downloadBtn = document.createElement('button');
         downloadBtn.innerText = this.languageManager.get('resultsDownloadButton');
         downloadBtn.style.background = '#4CAF50'; 
 
         downloadBtn.onclick = () => {
-            // --- downlaod logic ---
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            //set canvas size
             canvas.width = 800;
             canvas.height = 1000;
 
-            //create a background
             ctx.fillStyle = '#2a2a2e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            //load the final drawing
             const finalImage = new Image();
             finalImage.onload = () => {
-                //draw the co-op image
-                ctx.drawImage(finalImage, 50, 200, 700, 500); // x, y, width, height
+                ctx.drawImage(finalImage, 50, 200, 700, 500);
 
-                //set text styles
                 ctx.fillStyle = 'white';
                 ctx.textAlign = 'center';
 
-                //draw Title
                 ctx.font = 'bold 50px Poppins';
                 ctx.fillText('VARY-BRAWL', canvas.width / 2, 80);
 
-                //draw Prompt
                 ctx.font = '25px Poppins';
 				ctx.fillText(this.languageManager.get('drawingTopic', { prompt: results.prompt }), canvas.width / 2, 140);
 
-                //draw Score
                 ctx.font = 'bold 70px Poppins';
 				ctx.fillStyle = '#00bfff';
 				ctx.fillText(this.languageManager.get('resultsScore', { score: results.score }).replace(/<[^>]*>/g, ''), canvas.width / 2, 780);
 
-                //draw Players
                 ctx.font = '25px Poppins';
 				ctx.fillStyle = 'white';
 				const playerNames = this.players.map(p => p.name).join(', ');
 				ctx.fillText(this.languageManager.get('resultsDrawnBy', { playerNames: playerNames }).replace(/<[^>]*>/g, ''), canvas.width / 2, 840);
 								
-                //draw Watermark
+                // --- draw diffuclty on the downloadable image ---
+                const difficultyString = this.languageManager.get('resultsDifficulty', { difficulty: translatedDifficulty }).replace(/<[^>]*>/g, '');
+                ctx.font = '25px Poppins';
+                ctx.fillStyle = 'white';
+                ctx.fillText(difficultyString, canvas.width / 2, 880);
+
+
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                 ctx.font = '16px Poppins';
                 ctx.fillText('play : https://varybrawl.onrender.com', canvas.width / 2, 950);
 
-                //trigger download
                 const link = document.createElement('a');
                 link.download = 'varybrawl-drawing.png';
                 link.href = canvas.toDataURL();
@@ -490,11 +486,9 @@ export default class DrawingGameScene extends Phaser.Scene {
             finalImage.src = results.finalImage;
         };
 
-        //add the completed panel to the screen
         buttonWrapper.appendChild(exitBtn);
         buttonWrapper.appendChild(downloadBtn);
         resultsPanel.appendChild(buttonWrapper);
-        //lastly add
         mainContainer.appendChild(resultsPanel);
     }
      
