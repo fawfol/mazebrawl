@@ -59,5 +59,21 @@
   "pointsGainedText": "+{points}点",
   "totalScoreTitle": "合計スコア",
   "totalScoreLabel": "合計: {score}点",
-  "totalScoreLine": "{name}: {score}点"
+  "totalScoreLine": "{name}: {score}点",
+  "toolbarColors": "色",
+  "toolbarLightness": "明るさ",
+  "toolbarBrushSize": "ブラシサイズ",
+  "toolbarActions": "アクション",
+  "waitingForPrompt": "絵の題材を考え中...",
+  "toolbarEraser": "消しゴム",
+  "toolbarDone": "完了",
+  "toolbarFinished": "完成！",
+  "drawingTopic": "お題: 「{prompt}」",
+  "evaluatingTitle": "<h2>あなたの傑作を評価中...</h2>",
+  "evaluatingSubtitle": "<p>当社の高度なAIがあなたの作品を審査しています！</p>",
+  "resultsTitle": "結果",
+  "resultsScore": "スコア: <span class=\"ai-score\">{score}%</span>",
+  "resultsDrawnBy": "<strong>作画者:</strong> {playerNames}",
+  "resultsDownloadButton": "ダウンロード"
+
 }

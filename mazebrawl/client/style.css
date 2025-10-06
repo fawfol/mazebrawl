@@ -426,94 +426,104 @@ input[type='text']:focus {
   border-top-right-radius: 5px;
 }
 
-/* --- Bottom Toolbar Styling --- */
+/* =========================================
+   Bottom Toolbar Styling 
+   ========================================= */
+
 .draw-toolbar {
-  width: 100%;
+  /* Floating Panel Style */
+  width: auto;
+  max-width: 95%;
+  margin: 0 auto 15px auto; 
+  padding: 8px 15px;
+  background: rgba(42, 42, 46, 0.85); 
+  border: 1px solid #555;
+  border-radius: 50px; 
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px); 
+
+  /* Flex Layout */
   display: flex;
   flex-wrap: wrap; 
   justify-content: center;
   align-items: center;
-  gap: 15px;
-  padding: 10px 5px;
-  border-top: 1px solid #444;
-  background: #2a2a2e;
-  flex-shrink: 0;
+  gap: 20px;
+
   position: relative;
-  z-index: 10;      
+  z-index: 10;
 }
 
 .tool-group {
-  border-bottom: none;
-  padding-bottom: 0;
-  margin: 5px 10px;
+  margin: 0;
   text-align: center;
+  display: flex; 
+  align-items: center;
+  gap: 10px;
 }
 
 .tool-group h3 {
-  font-size: 0.9rem;
-  margin-top: 0;
-  margin-bottom: 8px;
-  color: #00bfff;
+  font-size: 1.5rem; 
+  margin: 0;
+  color: #ccc;
 }
 
-/*styling for the game timer */
-.draw-timer {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #ffc107; /* A nice yellow/amber color */
-  text-shadow: 0 0 5px rgba(0,0,0,0.5);
-  margin-top: -10px; /* Pull it a bit closer to the prompt */
-  margin-bottom: 5px;
-}
-
-/* --- Tools within the Toolbar --- */
+/* --- tools within the tbar --- */
 .color-container {
   display: flex; 
   gap: 5px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: 150px; 
+  max-width: 150px;
 }
 
 .draw-tool-color {
-  width: 30px;
-  height: 30px;
+  width: 25px; 
+  height: 25px;
   border: 2px solid #555;
+  border-radius: 20%; 
   transition: all 0.2s ease;
 }
 
-.draw-tool-color.selected,
-.eraser-btn.selected {
+.draw-tool-color.selected {
   border-color: #00bfff;
-  transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+  transform: scale(1.2);
 }
 
-.brush-preview {
-  width: 100%;
-  height: 40px;
-  background-color: #1e1e1e;
-  border-radius: 5px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto 10px auto;
+.eraser-btn.selected {
+    background-color: #00bfff;
 }
 
-.brush-dot {
-  background-color: #fff;
-  border-radius: 50%;
-  transition: width 0.1s linear, height 0.1s linear;
-}
-
+/* --- Custom Range Slider Styles --- */
 input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100px;
+  height: 8px;
+  background: #444;
+  border-radius: 5px;
+  outline: none;
 }
 
-.eraser-btn {
-  padding: 10px;
-  margin: 10px;
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #00bfff;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid #2a2a2e;
 }
+
+input[type='range']::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #00bfff;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid #2a2a2e;
+}
+
 
 /* --- Results Screen Layout --- */
 .draw-main.results-active {

@@ -59,6 +59,21 @@
   "pointsGainedText": "+{points} pts",
   "totalScoreTitle": "Total Score",
   "totalScoreLabel": "Total: {score} pts",
-  "totalScoreLine": "{name}: {score} pts"
+  "totalScoreLine": "{name}: {score} pts",
+  "waitingForPrompt": "Thinking of a topic...",
+  "toolbarColors": "Colors",
+  "toolbarLightness": "Lightness",
+  "toolbarBrushSize": "Brush Size",
+  "toolbarActions": "Actions",
+  "toolbarEraser": "Eraser",
+  "toolbarDone": "Done",
+  "toolbarFinished": "Finished!",
+  "drawingTopic": "TOPIC: \"{prompt}\"",
+  "evaluatingTitle": "<h2>Evaluating your masterpiece...</h2>",
+  "evaluatingSubtitle": "<p>Our highly sophisticated AI is judging your work!</p>",
+  "resultsTitle": "Results",
+  "resultsScore": "SCORE: <span class=\"ai-score\">{score}%</span>",
+  "resultsDrawnBy": "<strong>DRAWN BY:</strong> {playerNames}",
+  "resultsDownloadButton": "Download"
 }
 

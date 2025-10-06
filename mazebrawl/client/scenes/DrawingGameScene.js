@@ -81,7 +81,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         const header = document.createElement('div');
         header.className = 'draw-header';
         this.promptText = document.createElement('h2');
-        this.promptText.innerText = 'Waiting for prompt...';
+        this.promptText.innerText = this.languageManager.get('waitingForPrompt');
         this.timerText = document.createElement('div');
         this.timerText.className = 'draw-timer';
         header.appendChild(this.promptText);
@@ -106,65 +106,53 @@ export default class DrawingGameScene extends Phaser.Scene {
         const toolbar = document.createElement('div');
         toolbar.className = 'draw-toolbar';
 
-        // --- Color Palette Group ---
+        // --- ColorPaletteGroup ---
         const colorGroup = document.createElement('div');
         colorGroup.className = 'tool-group';
-        colorGroup.innerHTML = '<h3>Colors</h3>';
+        colorGroup.innerHTML = `<h3>🎨</h3>`; 
         const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#FFFFFF', '#000000'];
         const colorContainer = document.createElement('div');
         colorContainer.className = 'color-container';
-        
         colors.forEach(color => {
             const colorBtn = document.createElement('button');
             colorBtn.className = 'draw-tool-color';
             colorBtn.style.backgroundColor = color;
             if (color === this.baseColor) colorBtn.classList.add('selected');
-            
             colorBtn.onclick = () => {
-                this.baseColor = color; //set new base color
-                this.lightness = 50; // reset lightness to neutral
-                document.getElementById('lightness-slider').value = 50; //update slider UI
-                
-                this.updateCurrentColor(); //calculate the final color
-                
+                this.baseColor = color;
+                this.lightness = 50;
+                const lightnessSlider = document.getElementById('lightness-slider');
+                if(lightnessSlider) lightnessSlider.value = 50;
+                this.updateCurrentColor();
                 toolbar.querySelector('.selected')?.classList.remove('selected');
                 colorBtn.classList.add('selected');
             };
             colorContainer.appendChild(colorBtn);
         });
         colorGroup.appendChild(colorContainer);
-        toolbar.appendChild(colorGroup);
+        toolbar.appendChild(colorGroup); 
 
-        // --- Lightness Group ---
+        // --- LightnessGroup ---
         const lightnessGroup = document.createElement('div');
         lightnessGroup.className = 'tool-group';
-        lightnessGroup.innerHTML = '<h3>Lightness</h3>';
+        lightnessGroup.innerHTML = `<h3>☀️</h3>`; 
         const lightnessSlider = document.createElement('input');
         lightnessSlider.type = 'range';
         lightnessSlider.id = 'lightness-slider';
-        lightnessSlider.min = '0';  //black
-        lightnessSlider.max = '100'; //white
+        lightnessSlider.min = '0';
+        lightnessSlider.max = '100';
         lightnessSlider.value = this.lightness;
         lightnessSlider.oninput = (e) => {
             this.lightness = e.target.value;
             this.updateCurrentColor();
         };
         lightnessGroup.appendChild(lightnessSlider);
-        toolbar.appendChild(lightnessGroup);
+        toolbar.appendChild(lightnessGroup); // 
 
-        // --- brush size group ---
+        // --- BrushSizeGroup ---
         const brushGroup = document.createElement('div');
         brushGroup.className = 'tool-group';
-        brushGroup.innerHTML = '<h3>Brush Size</h3>';
-        const brushPreview = document.createElement('div');
-        brushPreview.className = 'brush-preview';
-        const brushDot = document.createElement('div');
-        brushDot.className = 'brush-dot';
-        brushDot.style.width = `${this.currentBrushSize}px`;
-        brushDot.style.height = `${this.currentBrushSize}px`;
-        brushDot.style.backgroundColor = this.currentColor;
-        brushPreview.appendChild(brushDot);
-        brushGroup.appendChild(brushPreview);
+        brushGroup.innerHTML = `<h3>🖌️</h3>`; 
         const brushSizeSlider = document.createElement('input');
         brushSizeSlider.type = 'range';
         brushSizeSlider.min = '2';
@@ -172,22 +160,20 @@ export default class DrawingGameScene extends Phaser.Scene {
         brushSizeSlider.value = this.currentBrushSize;
         brushSizeSlider.oninput = (e) => {
             this.currentBrushSize = e.target.value;
-            brushDot.style.width = `${this.currentBrushSize}px`;
-            brushDot.style.height = `${this.currentBrushSize}px`;
         };
         brushGroup.appendChild(brushSizeSlider);
-        toolbar.appendChild(brushGroup);
+        toolbar.appendChild(brushGroup); 
 
-        // --- actions Group ---
+        // --- actions group ---
         const actionsGroup = document.createElement('div');
         actionsGroup.className = 'tool-group';
-        actionsGroup.innerHTML = '<h3>Actions</h3>';
+        actionsGroup.innerHTML = `<h3>⚙️</h3>`; // Icon heading
         
         const eraserBtn = document.createElement('button');
         eraserBtn.className = 'eraser-btn';
-        eraserBtn.innerText = 'Eraser';
+        eraserBtn.innerText = this.languageManager.get('toolbarEraser');
         eraserBtn.onclick = () => {
-            this.currentColor = '#FFFFFF'; //eraser is always white
+            this.currentColor = '#FFFFFF';
             toolbar.querySelector('.selected')?.classList.remove('selected');
             eraserBtn.classList.add('selected');
         };
@@ -195,15 +181,14 @@ export default class DrawingGameScene extends Phaser.Scene {
         
         const doneBtn = document.createElement('button');
 		doneBtn.className = 'done-btn';
-		doneBtn.innerText = 'Done';
+		doneBtn.innerText = this.languageManager.get('toolbarDone');
 		doneBtn.onclick = () => {
 		    this.myCanvas.classList.add('finished-canvas');
 		    doneBtn.disabled = true;
-		    doneBtn.innerText = 'Finished!';
+		    doneBtn.innerText = this.languageManager.get('toolbarFinished');
 		    this.socket.emit('playerFinishedDrawing');
 		};
 		actionsGroup.appendChild(doneBtn);
-        
         toolbar.appendChild(actionsGroup);
 
         container.appendChild(toolbar);
@@ -211,7 +196,7 @@ export default class DrawingGameScene extends Phaser.Scene {
     }
 
     updatePromptText() {
-        this.promptText.innerText = `TOPIC: "${this.prompt}"`;
+        this.promptText.innerText = this.languageManager.get('drawingTopic', { prompt: this.prompt });
     }
      
     startTimer() {
@@ -407,8 +392,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         });
         
         this.socket.emit('submitDrawing', finalCanvas.toDataURL());
-        
-        this.showOverlay("<h2>Evaluating your masterpiece...</h2><p>Our highly sophisticated AI is judging your work!</p>");
+        this.showOverlay(`<h2>${this.languageManager.get('evaluatingTitle')}</h2>    <p>${this.languageManager.get('evaluatingSubtitle')}</p>`);
     }
 
     showFinalResults(results) {
@@ -430,13 +414,12 @@ export default class DrawingGameScene extends Phaser.Scene {
 
         //topic add
         const title = document.createElement('h2');
-        title.innerText = 'Results';
+        title.innerText = this.languageManager.get('resultsTitle');
         resultsPanel.appendChild(title);
 
-        const promptEl = document.createElement('p');
-        promptEl.innerHTML = `TOPIC: <strong>"${results.prompt}"</strong>`;
-        resultsPanel.appendChild(promptEl);
-
+		const promptEl = document.createElement('p');
+		promptEl.innerHTML = this.languageManager.get('drawingTopic', { prompt: `<strong>"${results.prompt}"</strong>` });
+		resultsPanel.appendChild(promptEl);
         //add final combined image INSIDE the panel
         const finalImage = document.createElement('img');
         finalImage.src = results.finalImage;
@@ -449,13 +432,14 @@ export default class DrawingGameScene extends Phaser.Scene {
 
         //add ai score and feedback
         const scoreEl = document.createElement('h3');
-        scoreEl.innerHTML = `SCORE: <span class="ai-score">${results.score}%</span>`;
-        resultsPanel.appendChild(scoreEl);
+		scoreEl.innerHTML = this.languageManager.get('resultsScore', { score: results.score });
+		resultsPanel.appendChild(scoreEl);
 
         //add list of cooperating players
         const playersEl = document.createElement('div');
-        const playerNames = this.players.map(p => p.name).join(', ');
-        playersEl.innerHTML = `<strong>DRAWN BY :</strong> ${playerNames} `;
+		const playerNames = this.players.map(p => p.name).join(', ');
+		playersEl.innerHTML = this.languageManager.get('resultsDrawnBy', { playerNames: playerNames });
+
         playersEl.style.marginTop = '15px';
         resultsPanel.appendChild(playersEl);
         
@@ -479,7 +463,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         
         // CREATE DOWNLOAD BUTTON
         const downloadBtn = document.createElement('button');
-        downloadBtn.innerText = 'Download';
+        downloadBtn.innerText = this.languageManager.get('resultsDownloadButton');
         downloadBtn.style.background = '#4CAF50'; 
 
         downloadBtn.onclick = () => {
@@ -511,19 +495,19 @@ export default class DrawingGameScene extends Phaser.Scene {
 
                 //draw Prompt
                 ctx.font = '25px Poppins';
-                ctx.fillText(`TOPIC: "${results.prompt}"`, canvas.width / 2, 140);
+				ctx.fillText(this.languageManager.get('drawingTopic', { prompt: results.prompt }), canvas.width / 2, 140);
 
                 //draw Score
                 ctx.font = 'bold 70px Poppins';
-                ctx.fillStyle = '#00bfff';
-                ctx.fillText(`SCORE : ${results.score}%`, canvas.width / 2, 780);
+				ctx.fillStyle = '#00bfff';
+				ctx.fillText(this.languageManager.get('resultsScore', { score: results.score }).replace(/<[^>]*>/g, ''), canvas.width / 2, 780);
 
                 //draw Players
                 ctx.font = '25px Poppins';
-                ctx.fillStyle = 'white';
-                const playerNames = this.players.map(p => p.name).join(', ');
-                ctx.fillText(`DRAWN BY : ${playerNames} `, canvas.width / 2, 840);
-                
+				ctx.fillStyle = 'white';
+				const playerNames = this.players.map(p => p.name).join(', ');
+				ctx.fillText(this.languageManager.get('resultsDrawnBy', { playerNames: playerNames }).replace(/<[^>]*>/g, ''), canvas.width / 2, 840);
+								
                 //draw Watermark
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                 ctx.font = '16px Poppins';
