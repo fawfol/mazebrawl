@@ -393,47 +393,48 @@ class CooperativeDrawing {
     this.playerCanvases = {};
     this.gameTimer = null;
     this.prompt = '';
+    this.englishPrompt = '';
 
     //this.startGame();
   }
 
 	//translation handler
 	async translateTopic(text, targetLang) {
-  if (targetLang !== 'ja') return text;
+	  if (targetLang !== 'ja') return text;
 
-  try {
-    //split the English topic into parts
-    const words = text.replace(/^A[n]?\s+/i, '').split(' ');
+	  try {
+		//split the English topic into parts
+		const words = text.replace(/^A[n]?\s+/i, '').split(' ');
 
-    let adj = null, sub = null, act = null;
+		let adj = null, sub = null, act = null;
 
-    //match words against our dictionary maps
-    for (const word of words) {
-      if (jpMap.adjectives[word]) adj = jpMap.adjectives[word];
-      if (jpMap.subjects[word]) sub = jpMap.subjects[word];
-      if (jpMap.actions[word]) act = jpMap.actions[word];
-    }
+		//match words against our dictionary maps
+		for (const word of words) {
+		  if (jpMap.adjectives[word]) adj = jpMap.adjectives[word];
+		  if (jpMap.subjects[word]) sub = jpMap.subjects[word];
+		  if (jpMap.actions[word]) act = jpMap.actions[word];
+		}
 
-    //cconstruct Japanese sentence pattern
-    //base structure: "<subject> が <adjective> です" or "<subject> が <action>"
-    let phrase = '';
+		//cconstruct Japanese sentence pattern
+		//base structure: "<subject> が <adjective> です" or "<subject> が <action>"
+		let phrase = '';
 
-    if (sub && act) {
-      phrase = `${sub}が${act}`;
-    } else if (adj && sub) {
-      phrase = `${adj}${sub}`;
-    } else if (sub) {
-      phrase = sub;
-    } else {
-      phrase = text; //fallback
-    }
+		if (sub && act) {
+		  phrase = `${sub}が${act}`;
+		} else if (adj && sub) {
+		  phrase = `${adj}${sub}`;
+		} else if (sub) {
+		  phrase = sub;
+		} else {
+		  phrase = text; //fallback
+		}
 
-    return phrase;
-  } catch (err) {
-    console.error("Japanese translation error:", err);
-    return text;
-  }
-}
+		return phrase;
+	  } catch (err) {
+		console.error("Japanese translation error:", err);
+		return text;
+	  }
+	}
 
 
   // Mad Libs topic generator (No AI)
@@ -479,6 +480,8 @@ class CooperativeDrawing {
     let topic = `${getArticle(mainPhrase)} ${mainPhrase}`;
     if (tone) topic = `${getArticle(tone)} ${tone} ${topic.split(' ').slice(1).join(' ')}`;
     if (place) topic += ` in ${place}`; // added "in" for better phrasing
+    
+    this.englishPrompt = topic;
 
     // --- translate the final topic if needed ---
     const finalTopic = await this.translateTopic(topic, this.lang);
@@ -595,7 +598,7 @@ class CooperativeDrawing {
 
 	
  async handleSubmit(finalImage) {
-    const result = await this.getDrawingScore(finalImage, this.prompt);
+    const result = await this.getDrawingScore(finalImage, this.englishPrompt); 
       this.io.to(this.roomId).emit('gameEnded', {
           prompt: this.prompt,
           finalImage: finalImage,
