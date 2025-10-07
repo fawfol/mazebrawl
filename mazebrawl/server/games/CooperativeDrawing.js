@@ -1,7 +1,8 @@
 // mazebrawl/server/games/CooperativeDrawing.js
 
 const { createCanvas, loadImage } = require('canvas');
-const axios = require('axios');
+
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // --- Word Lists For Topic Generation ---
 const wordLists = {
@@ -393,7 +394,7 @@ class CooperativeDrawing {
     this.playerCanvases = {};
     this.gameTimer = null;
     this.prompt = '';
-
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     //this.startGame();
   }
 
@@ -489,112 +490,67 @@ class CooperativeDrawing {
 
   //keyword-Based Scoring (No AI)
   async getAIScore(base64Image, prompt) {
-    console.log("Running enhanced local resemblance analysis for:", prompt);
+        console.log("Evaluating drawing with Google Gemini API for prompt:", prompt);
+        
+        try {
+            // 1. Get the Gemini Pro Vision model
+            const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-    const toneWords = {
-        dark: "dark", night: "dark", shadow: "dark", sad: "dark",
-        bright: "bright", sun: "bright", happy: "bright", fire: "bright"
-    };
-    const colorMap = {
-        red: [255, 0, 0], yellow: [255, 255, 0], blue: [0, 0, 255],
-        green: [0, 128, 0], orange: [255, 165, 0], purple: [128, 0, 128],
-        brown: [139, 69, 19], pink: [255, 182, 193], black: [0, 0, 0],
-        white: [255, 255, 255], gray: [128, 128, 128]
-    };
+            // 2. Prepare the image data for the API
+            const pureBase64 = base64Image.split(',')[1];
+            const imagePart = {
+                inlineData: {
+                    data: pureBase64,
+                    mimeType: "image/png"
+                },
+            };
 
-    let score = 50; // start midrange
-    let feedback = [];
+            // 3. Create a specific prompt for the AI to get a simple description
+            const aiSystemPrompt = `Analyze this image, which is a drawing from a game. The original prompt was "${prompt}". Describe what you see in a single, simple sentence.`;
 
-    try {
-        const image = await loadImage(base64Image);
-        const canvas = createCanvas(image.width, image.height);
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(image, 0, 0);
-        const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const totalPixels = width * height;
+            // 4. Call the API
+            const result = await model.generateContent([aiSystemPrompt, imagePart]);
+            const response = result.response;
+            const aiGeneratedText = response.text().toLowerCase();
 
-        // -----average brightness -----
-        let brightnessSum = 0;
-        for (let i = 0; i < data.length; i += 4) {
-            brightnessSum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-        }
-        const avgBrightness = brightnessSum / totalPixels;
-        // -----brightness matching -----
-        const lowerPrompt = prompt.toLowerCase();
-        let toneMatch = 0;
-        if (Object.keys(toneWords).some(w => lowerPrompt.includes(w))) {
-            const tone = Object.keys(toneWords).find(w => lowerPrompt.includes(w));
-            const expected = toneWords[tone];
-            if (expected === "dark" && avgBrightness < 100) {
-                score += 10;
-                feedback.push("Nice darker tones fitting the theme.");
-            } else if (expected === "bright" && avgBrightness > 160) {
-                score += 10;
-                feedback.push("Good bright look for the theme!");
-            } else {
-                feedback.push("The overall tone could better match the mood of the prompt.");
-            }
-        }
+            console.log(`Gemini AI says: "${aiGeneratedText}"`);
 
-        // -----color relevance -----
-        let matchedColors = 0;
-        for (const colorName in colorMap) {
-            if (lowerPrompt.includes(colorName)) {
-                const [rT, gT, bT] = colorMap[colorName];
-                let matches = 0;
-                for (let i = 0; i < data.length; i += 4) {
-                    const dist = Math.sqrt(
-                        (data[i] - rT) ** 2 + (data[i + 1] - gT) ** 2 + (data[i + 2] - bT) ** 2
-                    );
-                    if (dist < 80) matches++;
+            // 5. Use the SAME scoring logic as before to check for keywords
+            const promptWords = prompt.toLowerCase().replace(/^(a|an)\s/, '').split(' ');
+            let matchCount = 0;
+            let matchedWords = new Set();
+
+            for (const word of promptWords) {
+                // Check for the word, and also its plural form (e.g., "cat" in "cats")
+                if (aiGeneratedText.includes(word) && !matchedWords.has(word)) {
+                    matchCount++;
+                    matchedWords.add(word);
                 }
-                const pct = (matches / totalPixels) * 100;
-                if (pct > 2) {
-                    score += Math.min(25 / (matchedColors + 1), 15);
-                    feedback.push(`Good use of ${colorName}!`);
-                } else {
-                    feedback.push(`Could use a bit more ${colorName}.`);
-                }
-                matchedColors++;
             }
-        }
 
-        // ----- edge / detail detection -----
-        let edgeCount = 0;
-        for (let y = 0; y < height - 1; y++) {
-            for (let x = 0; x < width - 1; x++) {
-                const idx = (y * width + x) * 4;
-                const rightIdx = (y * width + (x + 1)) * 4;
-                const downIdx = ((y + 1) * width + x) * 4;
-                const diffRight = Math.abs(data[idx] - data[rightIdx]) +
-                                  Math.abs(data[idx + 1] - data[rightIdx + 1]) +
-                                  Math.abs(data[idx + 2] - data[rightIdx + 2]);
-                const diffDown = Math.abs(data[idx] - data[downIdx]) +
-                                 Math.abs(data[idx + 1] - data[downIdx + 1]) +
-                                 Math.abs(data[idx + 2] - data[downIdx + 2]);
-                if (diffRight > 100 || diffDown > 100) edgeCount++;
+            const score = Math.round((matchCount / promptWords.length) * 100);
+
+            // 6. Create fun feedback
+            let feedback = `The AI saw: "${aiGeneratedText}". Not bad!`;
+            if (score > 80) {
+                feedback = `Amazing! The AI perfectly recognized your drawing as: "${aiGeneratedText}"`;
+            } else if (score > 50) {
+                feedback = `Great job! The AI got the main idea, describing it as: "${aiGeneratedText}"`;
             }
-        }
-        const edgeDensity = edgeCount / totalPixels;
-        if (edgeDensity > 0.05) {
-            score += 5;
-            feedback.push("Detailed drawing effort detected!");
-        } else if (edgeDensity < 0.015) {
-            feedback.push("Maybe add more structure or lines next time.");
-        }
 
-        //clamp & finalize
-        score = Math.min(100, Math.max(20, Math.round(score)));
-        if (feedback.length === 0) feedback.push("A solid collaborative drawing effort!");
+            return {
+                score: Math.min(100, Math.max(10, score)),
+                feedback: feedback
+            };
 
-    } catch (err) {
-        console.error("AI scoring failed:", err);
-        feedback.push("Error analyzing drawing, defaulting to base score.");
+        } catch (error) {
+            console.error("Error calling Google Gemini API:", error);
+            return {
+                score: 50,
+                feedback: "The AI judge seems to be on a coffee break! Great job on the drawing, though!"
+            };
+        }
     }
-
-    return { score, feedback: feedback.join(" ") };
-}
-
 
   async initialize() {
     this.prompt = await this.generateTopic(); // using await here
@@ -687,17 +643,17 @@ class CooperativeDrawing {
   }
 
   async handleSubmit(finalImage) {
-      const result = await this.getAIScore(finalImage, this.prompt);
-      this.io.to(this.roomId).emit('gameEnded', {
-          prompt: this.prompt,
-          finalImage: finalImage,
-          score: result.score,
-          feedback: result.feedback,
-          difficulty: this.difficulty
-      });
-      setTimeout(() => {
+    const result = await this.getAIScore(finalImage, this.prompt);
+    this.io.to(this.roomId).emit('gameEnded', {
+        prompt: this.prompt,
+        finalImage: finalImage,
+        score: result.score,
+        feedback: result.feedback,
+        difficulty: this.difficulty
+    });
+    setTimeout(() => {
         if (this.onGameEnd) { this.onGameEnd(); }
-      }, 8000); 
+    }, 8000);
   }
 }
 
