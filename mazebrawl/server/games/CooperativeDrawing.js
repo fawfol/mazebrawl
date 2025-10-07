@@ -491,13 +491,14 @@ class CooperativeDrawing {
   }
 
   //keyword-Based Scoring (No AI)
-  async getDrawingScore(base64Image, prompt) {
-    console.log("Delegating analysis to DrawingAnalyzer for:", prompt);
-    try {
-        const result = await this.analyzer.analyzeDrawing(base64Image, prompt);
-        return result;
-    } catch (err) {
-        console.error("Drawing analysis failed:", err);
+  async getDrawingScore(base64Image, prompt, difficulty) { // Add 'difficulty' here
+  console.log("Delegating analysis to DrawingAnalyzer for:", prompt);
+  try {
+      // And pass 'difficulty' along to the analyzer
+      const result = await this.analyzer.analyzeDrawing(base64Image, prompt, difficulty);
+      return result;
+  } catch (err) {
+      console.error("Drawing analysis failed:", err);
         return {
             score: 30, // Default score on error
             feedback: "There was an error analyzing the drawing.",
@@ -598,7 +599,8 @@ class CooperativeDrawing {
 
 	
  async handleSubmit(finalImage) {
-    const result = await this.getDrawingScore(finalImage, this.englishPrompt); 
+  const result = await this.getDrawingScore(finalImage, this.englishPrompt, this.difficulty);
+
       this.io.to(this.roomId).emit('gameEnded', {
           prompt: this.prompt,
           finalImage: finalImage,

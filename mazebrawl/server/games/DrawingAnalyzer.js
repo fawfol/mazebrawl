@@ -33,6 +33,96 @@ const keywordMap = {
     'Magic': ['color_purple', 'vibrant_colors'],
 
     // subjects -> Tags
+    // --- Animals ---
+		// --- Food & Drink ---
+	'Pizza': ['shape_round', 'color_red', 'color_yellow'],
+	'Burger': ['shape_round', 'color_brown'],
+	'Ice Cream': ['palette_cool', 'shape_vertical', 'subject_icecream'],
+	'Cake': ['shape_round', 'palette_vibrant'],
+	'Apple': ['shape_round', 'color_red'],
+	'Banana': ['shape_horizontal', 'color_yellow'],
+	'Cookie': ['shape_round', 'color_brown', 'low_detail'],
+	'Donut': ['shape_round', 'palette_vibrant'],
+
+	// --- Vehicles & Transportation ---
+	'Bicycle': ['high_detail', 'metallic'],
+	'Rocket': ['shape_vertical', 'fire', 'flying', 'high_detail'],
+	'Train': ['shape_horizontal', 'metallic', 'high_detail'],
+	'Airplane': ['flying', 'metallic', 'shape_horizontal'],
+	'Helicopter': ['flying', 'metallic', 'high_detail'],
+	'Submarine': ['underwater', 'metallic', 'shape_horizontal'],
+
+	// --- Buildings & Structures ---
+	'Castle': ['high_detail', 'color_gray', 'composition_bottom_heavy'],
+	'Bridge': ['shape_horizontal', 'composition_bottom_heavy'],
+	'Lighthouse': ['shape_vertical', 'bright', 'composition_bottom_heavy'],
+	'Pyramid': ['shape_vertical', 'color_yellow', 'ancient'],
+	'Tent': ['shape_vertical', 'low_detail'],
+
+	// --- Clothing & Accessories ---
+	'Hat': ['composition_top_heavy', 'low_detail'],
+	'Shoes': ['composition_bottom_heavy', 'low_detail'],
+	'Crown': ['color_yellow', 'metallic', 'texture_spiky'],
+	'Glasses': ['low_detail', 'metallic'],
+	'Ring': ['shape_round', 'metallic'],
+
+	// --- Tools & Instruments ---
+	'Hammer': ['metallic', 'low_detail'],
+	'Sword': ['metallic', 'shape_vertical', 'texture_spiky'],
+	'Shield': ['shape_round', 'metallic'],
+	'Piano': ['color_black', 'color_white', 'shape_horizontal', 'high_detail'],
+	'Drum': ['shape_round', 'low_detail'],
+	'Bomb': ['shape_round', 'color_black', 'dark'],
+	'Cat': ['low_detail', 'shape_horizontal'],
+	'Dog': ['low_detail', 'shape_horizontal'],
+	'Fish': ['palette_cool', 'shape_horizontal'],
+	'Bird': ['flying', 'composition_top_heavy', 'low_detail'],
+	'Lion': ['color_yellow', 'color_brown', 'high_detail'],
+	'Elephant': ['large', 'color_gray', 'texture_smooth'],
+	'Frog': ['color_green', 'low_detail'],
+	'Panda': ['color_black', 'color_white', 'shape_round'],
+	'Monkey': ['color_brown', 'high_activity'],
+
+	// --- People & Roles ---
+	'Wizard': ['high_detail', 'color_purple', 'magic'],
+	'Knight': ['high_detail', 'metallic', 'shape_vertical'],
+	'Pirate': ['high_detail', 'color_brown', 'subject_pirate'],
+	'Ninja': ['dark', 'color_black', 'low_detail'],
+	'Astronaut': ['high_detail', 'color_white', 'composition_mid_air'],
+	'Chef': ['color_white', 'low_detail'],
+	'Robot': ['metallic', 'high_detail'],
+	'Ghost': ['color_white', 'flying', 'low_detail'],
+	'Alien': ['color_green', 'shape_vertical'],
+
+	// --- Objects & Items ---
+	'Car': ['shape_horizontal', 'metallic'],
+	'Boat': ['shape_horizontal', 'composition_bottom_heavy'],
+	'House': ['composition_bottom_heavy', 'texture_smooth'],
+	'Book': ['texture_smooth', 'low_detail'],
+	'Computer': ['texture_smooth', 'high_detail'],
+	'Guitar': ['shape_vertical', 'high_detail'],
+	'Clock': ['shape_round', 'high_detail'],
+	'Key': ['metallic', 'low_detail'],
+
+	// --- Nature & Scenery (including your existing ones) ---
+	'Fire': ['bright', 'color_orange', 'color_red', 'palette_warm'],
+	'Sun': ['bright', 'color_yellow', 'color_orange', 'composition_top_heavy', 'subject_sun'],
+	'Moon': ['dark', 'color_white', 'composition_top_heavy'],
+	'Tree': ['color_green', 'color_brown', 'composition_bottom_heavy', 'shape_vertical'],
+	'Mountain': ['large', 'high_detail', 'composition_bottom_heavy', 'color_gray'],
+	'Ocean': ['color_blue', 'large'],
+	'Flower': ['palette_vibrant', 'color_green'],
+	'Cloud': ['color_white', 'texture_smooth', 'composition_top_heavy'],
+	'Star': ['texture_spiky', 'color_yellow', 'bright'],
+	'River': ['color_blue', 'shape_horizontal'],
+	'Volcano': ['color_red', 'color_brown', 'mountain'],
+
+	// --- Fantasy ---
+	'Dragon': ['flying', 'large', 'fantasy', 'fire', 'high_detail'],
+	'Unicorn': ['fantasy', 'color_white', 'high_detail'],
+	'Mermaid': ['fantasy', 'color_blue', 'shape_vertical'],
+	'Fairy': ['flying', 'low_detail', 'magic'],
+    'Fire': ['bright', 'color_orange', 'color_red', 'palette_warm'],
     'Dragon': ['flying', 'large', 'fantasy', 'fire', 'high_detail'],
     'Sun': ['bright', 'color_yellow', 'color_orange', 'composition_top_heavy'],
     'Moon': ['dark', 'color_white', 'composition_top_heavy'],
@@ -48,6 +138,49 @@ const keywordMap = {
     'Dancing': ['high_activity', 'vibrant_colors'],
     'Jumping': ['high_activity', 'composition_mid_air'],
     'Climbing': ['composition_vertical'],
+		'Sleepy': ['dark', 'low_activity'],
+	'Excited': ['palette_vibrant', 'high_activity'],
+	'Brave': ['high_detail'],
+	'Tall': ['shape_vertical'],
+	'Short': ['shape_short'], // Opposite of vertical
+	'Square': ['shape_square'], // For things like boxes, windows
+	'Striped': ['texture_striped'], // Future-proofing for more advanced analysis
+	'Spotted': ['texture_spotted'], // "
+	'Floating': ['composition_mid_air'],
+	'Electric': ['color_yellow', 'bright_colors', 'texture_spiky'],
+	'Shadowy': ['dark', 'color_black'],
+
+	// --- SUBJECTS (from your wordLists.subjects) ---
+	// More Animals
+	'Tiger': ['color_orange', 'color_black', 'high_detail'],
+	'Rabbit': ['color_white', 'low_detail'],
+	'Bear': ['color_brown', 'large'],
+	'Fox': ['color_orange', 'shape_horizontal'],
+	'Horse': ['color_brown', 'large'],
+	'Penguin': ['color_black', 'color_white', 'shape_vertical'],
+	'Giraffe': ['shape_vertical', 'color_yellow', 'large'],
+	'Snake': ['shape_horizontal', 'color_green'],
+	'Turtle': ['shape_round', 'color_green'],
+	'Butterfly': ['flying', 'palette_vibrant'],
+
+	// More People & Fantasy
+	'Alien': ['color_green', 'shape_vertical', 'subject_alien'],
+	'Clown': ['palette_vibrant', 'shape_round'],
+	'Superhero': ['flying', 'high_detail'],
+	'King': ['high_detail', 'color_purple', 'color_yellow'],
+	'Queen': ['high_detail', 'color_purple', 'color_yellow'],
+	'Scientist': ['high_detail', 'color_white'],
+	'Zombie': ['color_green', 'dark', 'low_detail'],
+	'Mermaid': ['shape_vertical', 'palette_cool', 'fantasy'],
+	'Fairy': ['flying', 'low_detail', 'magic'],
+
+	// More Objects & Nature
+	'Umbrella': ['shape_round', 'low_detail'],
+	'Candle': ['shape_vertical', 'fire', 'bright'],
+	'Camera': ['shape_square', 'low_detail'],
+	'Island': ['composition_bottom_heavy', 'color_green', 'color_brown'],
+	'Snowman': ['shape_round', 'color_white', 'count_2'],
+	'Leaf': ['color_green', 'low_detail'],
 };
 
 // color definitions for analysis
@@ -62,7 +195,8 @@ const colorDefs = {
 class DrawingAnalyzer {
 
     //main public method
-    async analyzeDrawing(base64Image, prompt) {
+    async analyzeDrawing(base64Image, prompt, difficulty = 'hard') {
+
         //prepare for analysis
         const keywords = this._getKeywordsFromPrompt(prompt);
         const image = await loadImage(base64Image);
@@ -73,7 +207,8 @@ class DrawingAnalyzer {
         const metrics = this._calculateImageMetrics(pixelData);
 
         //score the metrics based on keywords from the prompt
-        const { score, feedback, breakdown } = this._scoreMetrics(metrics, keywords);
+        const { score, feedback, breakdown } = this._scoreMetrics(metrics, keywords, difficulty);
+
         
         return { score, feedback, breakdown };
     }
@@ -262,11 +397,26 @@ class DrawingAnalyzer {
 		    feedback.push("Synergy bonus! The ball's shape and color are spot on.");
 		}
 
-		// --- Finalize ---
-		score = Math.min(100, Math.max(0, Math.round(score)));
+		// --- Finalize Score based on Difficulty ---
+		let rawScore = Object.values(breakdown).reduce((a, b) => a + b, 0);
+
+		const difficultyModifiers = {
+			easy: 3,
+			hard: 2,      
+			difficult: 1.5, 
+			pro: 1        
+		};
+
+		// Look up the modifier, defaulting to 1.0 if not found
+		const modifier = difficultyModifiers[difficulty.toLowerCase()] || 1.0;
+		let finalScore = rawScore * modifier;
+
+		// Ensure the score stays within a reasonable range (e.g., 20-100)
+		finalScore = Math.min(100, Math.max(20, Math.round(finalScore)));
+
 		if (feedback.length === 0) feedback.push("A solid collaborative effort!");
-		
-		return { score, feedback: feedback.join(' '), breakdown };
+
+		return { score: finalScore, feedback: feedback.join(' '), breakdown };
 	}
 }
 
