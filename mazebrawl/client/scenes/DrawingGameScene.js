@@ -26,6 +26,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.lightness = 50;         //slider value (0-100)
         this.currentColor = '#000000';   //final color after lightness is applied
         this.currentBrushSize = 5;
+        this.isErasing = false;
     }
      
     async create() {
@@ -220,6 +221,7 @@ export default class DrawingGameScene extends Phaser.Scene {
             colorBtn.style.backgroundColor = color;
             if (color === this.baseColor) colorBtn.classList.add('selected');
             colorBtn.onclick = () => {
+            	this.isErasing = false;
                 this.baseColor = color;
                 this.lightness = 50;
                 document.getElementById('lightness-slider').value = 50;
@@ -236,6 +238,7 @@ export default class DrawingGameScene extends Phaser.Scene {
         eraserBtn.className = 'eraser-btn';
         eraserBtn.innerText = this.languageManager.get('toolbarEraser');
         eraserBtn.onclick = () => {
+        	this.isErasing = true;
             this.currentColor = '#FFFFFF';
             toolbar.querySelector('.selected')?.classList.remove('selected');
             eraserBtn.classList.add('selected');
@@ -308,25 +311,38 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.updateToolbarVisuals();
     }
     //TOOLBAR HELPER
-    updateToolbarVisuals() {
-        const [h, s] = this.hexToHsl(this.baseColor);
-        this.currentColor = this.hslToHex(h, s, this.lightness);
+   updateToolbarVisuals() {
+    const brushPreviewDot = document.querySelector('.brush-preview-dot');
 
-        const lightnessSlider = document.getElementById('lightness-slider');
-        if (lightnessSlider) {
-            const darkVersion = this.hslToHex(h, s, 10);
-            const lightVersion = this.hslToHex(h, s, 90);
-            lightnessSlider.style.background = `linear-gradient(to right, ${darkVersion}, ${this.baseColor}, ${lightVersion})`;
-            
-            lightnessSlider.style.setProperty('--thumb-color', this.currentColor);
-        }
-        const brushPreviewDot = document.querySelector('.brush-preview-dot');
+    // if we are erasing, lock the color to white and stop.
+    if (this.isErasing) {
         if (brushPreviewDot) {
             brushPreviewDot.style.width = `${this.currentBrushSize}px`;
             brushPreviewDot.style.height = `${this.currentBrushSize}px`;
-            brushPreviewDot.style.backgroundColor = this.currentColor;
+            brushPreviewDot.style.backgroundColor = '#FFFFFF';
         }
+        return;
     }
+
+    //code only runs when NOT erasing
+    const [h, s] = this.hexToHsl(this.baseColor);
+    this.currentColor = this.hslToHex(h, s, this.lightness);
+
+    const lightnessSlider = document.getElementById('lightness-slider');
+    if (lightnessSlider) {
+        const darkVersion = this.hslToHex(h, s, 10);
+        const lightVersion = this.hslToHex(h, s, 90);
+        lightnessSlider.style.background = `linear-gradient(to right, ${darkVersion}, ${this.baseColor}, ${lightVersion})`;
+        
+        lightnessSlider.style.setProperty('--thumb-color', this.currentColor);
+    }
+    
+    if (brushPreviewDot) {
+        brushPreviewDot.style.width = `${this.currentBrushSize}px`;
+        brushPreviewDot.style.height = `${this.currentBrushSize}px`;
+        brushPreviewDot.style.backgroundColor = this.currentColor;
+    }
+}
 
     updatePromptText() {
         this.promptText.innerText = this.languageManager.get('drawingTopic', { prompt: this.prompt });
