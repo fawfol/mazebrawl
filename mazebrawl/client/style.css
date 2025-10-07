@@ -665,3 +665,29 @@ input[type='range']::-moz-range-thumb {
   }
 }
 
+/* =========================================
+   Mobile Toolbar Adjustments
+   ========================================= */
+@media (max-width: 768px) {
+  .draw-toolbar {
+    margin-bottom: 5vh;
+    gap: 15px;
+    max-width: 98%; 
+  }
+  .tool-group h3 {
+    display: none;
+  }
+  .tool-group {
+      gap: 8px;
+  }
+  input[type='range'] {
+    width: 80px; 
+  }
+  .draw-tool-color {
+    width: 24px;
+    height: 24px;
+  }
+  .color-container {
+    max-width: 120px; 
+  }
+}
