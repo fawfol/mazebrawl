@@ -489,53 +489,112 @@ class CooperativeDrawing {
 
   //keyword-Based Scoring (No AI)
   async getAIScore(base64Image, prompt) {
-    console.log('Running keyword-based analysis for prompt:', prompt);
+    console.log("Running enhanced local resemblance analysis for:", prompt);
+
+    const toneWords = {
+        dark: "dark", night: "dark", shadow: "dark", sad: "dark",
+        bright: "bright", sun: "bright", happy: "bright", fire: "bright"
+    };
     const colorMap = {
         red: [255, 0, 0], yellow: [255, 255, 0], blue: [0, 0, 255],
-        green: [0, 128, 0], orange: [255, 165, 0], purple: [128, 0, 128]
+        green: [0, 128, 0], orange: [255, 165, 0], purple: [128, 0, 128],
+        brown: [139, 69, 19], pink: [255, 182, 193], black: [0, 0, 0],
+        white: [255, 255, 255], gray: [128, 128, 128]
     };
-    let score = 40;
-    let feedback = "A good collaborative effort! ";
+
+    let score = 50; // start midrange
+    let feedback = [];
+
     try {
         const image = await loadImage(base64Image);
         const canvas = createCanvas(image.width, image.height);
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         ctx.drawImage(image, 0, 0);
-        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        const totalPixels = pixels.length / 4;
-        let promptColorsFound = 0;
+        const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const totalPixels = width * height;
 
-        for (const colorName in colorMap) {
-            if (prompt.toLowerCase().includes(colorName)) {
-                promptColorsFound++;
-                let colorPixelCount = 0;
-                const targetRgb = colorMap[colorName];
-                for (let i = 0; i < pixels.length; i += 4) {
-                    const distance = Math.sqrt(
-                        Math.pow(pixels[i] - targetRgb[0], 2) +
-                        Math.pow(pixels[i+1] - targetRgb[1], 2) +
-                        Math.pow(pixels[i+2] - targetRgb[2], 2)
-                    );
-                    if (distance < 120) colorPixelCount++;
-                }
-                if ((colorPixelCount / totalPixels) * 100 > 3) {
-                    score += 50 / promptColorsFound; //give up to 50 bonus points for color matching
-                    feedback += `Excellent use of ${colorName}! `;
-                } else {
-                    feedback += `I was hoping to see more ${colorName}. `;
-                }
+        // -----average brightness -----
+        let brightnessSum = 0;
+        for (let i = 0; i < data.length; i += 4) {
+            brightnessSum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        }
+        const avgBrightness = brightnessSum / totalPixels;
+        // -----brightness matching -----
+        const lowerPrompt = prompt.toLowerCase();
+        let toneMatch = 0;
+        if (Object.keys(toneWords).some(w => lowerPrompt.includes(w))) {
+            const tone = Object.keys(toneWords).find(w => lowerPrompt.includes(w));
+            const expected = toneWords[tone];
+            if (expected === "dark" && avgBrightness < 100) {
+                score += 10;
+                feedback.push("Nice darker tones fitting the theme.");
+            } else if (expected === "bright" && avgBrightness > 160) {
+                score += 10;
+                feedback.push("Good bright look for the theme!");
+            } else {
+                feedback.push("The overall tone could better match the mood of the prompt.");
             }
         }
-        if (promptColorsFound === 0) {
-            score += Math.floor(Math.random() * 21) + 10; //add 10-30 random points if no color
-            feedback += "Looks very creative!";
+
+        // -----color relevance -----
+        let matchedColors = 0;
+        for (const colorName in colorMap) {
+            if (lowerPrompt.includes(colorName)) {
+                const [rT, gT, bT] = colorMap[colorName];
+                let matches = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    const dist = Math.sqrt(
+                        (data[i] - rT) ** 2 + (data[i + 1] - gT) ** 2 + (data[i + 2] - bT) ** 2
+                    );
+                    if (dist < 80) matches++;
+                }
+                const pct = (matches / totalPixels) * 100;
+                if (pct > 2) {
+                    score += Math.min(25 / (matchedColors + 1), 15);
+                    feedback.push(`Good use of ${colorName}!`);
+                } else {
+                    feedback.push(`Could use a bit more ${colorName}.`);
+                }
+                matchedColors++;
+            }
         }
+
+        // ----- edge / detail detection -----
+        let edgeCount = 0;
+        for (let y = 0; y < height - 1; y++) {
+            for (let x = 0; x < width - 1; x++) {
+                const idx = (y * width + x) * 4;
+                const rightIdx = (y * width + (x + 1)) * 4;
+                const downIdx = ((y + 1) * width + x) * 4;
+                const diffRight = Math.abs(data[idx] - data[rightIdx]) +
+                                  Math.abs(data[idx + 1] - data[rightIdx + 1]) +
+                                  Math.abs(data[idx + 2] - data[rightIdx + 2]);
+                const diffDown = Math.abs(data[idx] - data[downIdx]) +
+                                 Math.abs(data[idx + 1] - data[downIdx + 1]) +
+                                 Math.abs(data[idx + 2] - data[downIdx + 2]);
+                if (diffRight > 100 || diffDown > 100) edgeCount++;
+            }
+        }
+        const edgeDensity = edgeCount / totalPixels;
+        if (edgeDensity > 0.05) {
+            score += 5;
+            feedback.push("Detailed drawing effort detected!");
+        } else if (edgeDensity < 0.015) {
+            feedback.push("Maybe add more structure or lines next time.");
+        }
+
+        //clamp & finalize
+        score = Math.min(100, Math.max(20, Math.round(score)));
+        if (feedback.length === 0) feedback.push("A solid collaborative drawing effort!");
+
     } catch (err) {
-        console.error("Error processing image for scoring:", err);
-        return { score: 50, feedback: "Error aanalyzing the drawing." };
+        console.error("AI scoring failed:", err);
+        feedback.push("Error analyzing drawing, defaulting to base score.");
     }
-    return { score: Math.floor(Math.min(score, 99)), feedback: feedback.trim() };
-  }
+
+    return { score, feedback: feedback.join(" ") };
+}
+
 
   async initialize() {
     this.prompt = await this.generateTopic(); // using await here
