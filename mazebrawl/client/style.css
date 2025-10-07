@@ -431,8 +431,8 @@ input[type='text']:focus {
    ========================================= */
 .draw-timer-wrapper {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
   margin: 10px auto; /* Center it in the header */
 }
 
@@ -474,7 +474,7 @@ input[type='text']:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 1.3rem;
   font-weight: bold;
   color: #fff;
 }
@@ -484,54 +484,51 @@ input[type='text']:focus {
    ========================================= */
 
 .draw-toolbar {
-  /* Floating Panel Style */
   width: auto;
-  max-width: 95%;
-  margin: 0 auto 15px auto; 
-  padding: 8px 15px;
+  max-width: 600px; 
+  margin: 0 auto 15px auto;
+  margin-bottom: 2rem;
+  padding: 12px 30px; 
+  padding-right: 50px;
   background: rgba(42, 42, 46, 0.85); 
   border: 1px solid #555;
-  border-radius: 50px; 
+  border-radius: 20px; 
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px); 
-
-  /* Flex Layout */
   display: flex;
-  flex-wrap: wrap; 
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-
+  flex-wrap: nowrap; 
+  justify-content: space-between; 
+  align-items: center; 
+  gap: 20px; 
   position: relative;
   z-index: 10;
 }
 
+/*newclass for the left and right columns */
+.toolbar-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px; 
+}
+
 .tool-group {
-  margin: 0;
-  text-align: center;
-  display: flex; 
-  align-items: center;
-  gap: 10px;
+  display: none;
 }
 
-.tool-group h3 {
-  font-size: 1.5rem; 
-  margin: 0;
-  color: #ccc;
-}
-
-/* --- tools within the tbar --- */
+/* --- tools within the toolbar --- */
 .color-container {
-  display: flex; 
+  display: grid; /* Changed to grid for 3x3 layout */
+  grid-template-columns: repeat(3, auto); /* 3 columns */
   gap: 5px;
-  flex-wrap: wrap;
+  width: 90px; /* fixed width for the grid */
   justify-content: center;
-  max-width: 150px;
 }
 
 .draw-tool-color {
   width: 25px; 
   height: 25px;
+  padding: 0; /*remove default padding */
   border: 2px solid #555;
   border-radius: 20%; 
   transition: all 0.2s ease;
@@ -542,17 +539,65 @@ input[type='text']:focus {
   transform: scale(1.2);
 }
 
+.eraser-btn {
+    width: 100%; 
+}
+
 .eraser-btn.selected {
     background-color: #00bfff;
+}
+
+/* container for the sliders on the right side */
+.sliders-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px; 
+    align-items: center; 
+}
+
+.slider-label {
+    font-size: 1em;
+    color: #ccc;
+    margin: 20px 0 0 0; 
+    padding: 0;
+}
+
+.done-btn {
+    width: 100%; 
+}
+.slider-group {
+    display: flex;
+    align-items: center;
+}
+.slider-group.brush-slider-group {
+    position: relative;
+}
+
+
+.slider-group h3 {
+  display: none;
+}
+
+.brush-preview-dot {
+    position: absolute;
+    top: 50%;
+    left: 135px;
+    transform: translateY(-50%); 
+    width: 5px;
+    height: 5px;
+    background-color: #fff;
+    border-radius: 50%;
+    border: 1px solid #555;
+    transition: width 0.1s ease, height 0.1s ease;
 }
 
 /* --- Custom Range Slider Styles --- */
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
-  width: 100px;
-  height: 8px;
-  background: #444;
+  width: 120px;
+  height: 10px; /* Slightly thicker track */
+  background: #444; /* Default background */
   border-radius: 5px;
   outline: none;
 }
@@ -560,25 +605,29 @@ input[type='range'] {
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
-  background: #00bfff;
+  width: 22px; /* Slightly larger thumb */
+  height: 22px;
+  background: var(--thumb-color, #00bfff); /* Use CSS variable for dynamic color */
   cursor: pointer;
   border-radius: 50%;
-  border: 2px solid #2a2a2e;
+  border: 3px solid #fff; /* White border for contrast */
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
 }
 
 input[type='range']::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: #00bfff;
+  width: 22px;
+  height: 22px;
+  background: var(--thumb-color, #00bfff); /* Use CSS variable for dynamic color */
   cursor: pointer;
   border-radius: 50%;
-  border: 2px solid #2a2a2e;
+  border: 3px solid #fff;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
 }
 
 
-/* --- Results Screen Layout --- */
+/* =========================================
+   BRESULTS SCREEN LAYOUT
+   ========================================= */
 .draw-main.results-active {
   align-items: center;
   justify-content: center;

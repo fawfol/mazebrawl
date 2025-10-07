@@ -1,5 +1,5 @@
 {
-  "varyBrawlTitle": "V BRAWL",
+  "varyBrawlTitle": "VARY BRAWL",
   "enterYourName": "名前を入力してください",
   "enterRoomId": "ルームIDを入力 (5文字)",
   "createRoomButton": "ルームを作成",
@@ -67,6 +67,7 @@
   "toolbarActions": "アクション",
   "waitingForPrompt": "絵の題材を考え中...",
   "toolbarEraser": "消しゴム",
+  "paintbrushthicktext": "絵筆の太さ :",
   "toolbarDone": "完了",
   "toolbarFinished": "完成！",
   "drawingTopic": "お題: 「{prompt}」",

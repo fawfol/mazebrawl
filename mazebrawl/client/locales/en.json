@@ -1,5 +1,5 @@
 {
-  "varyBrawlTitle": "V BRAWL",
+  "varyBrawlTitle": "VARY BRAWL",
   "enterYourName": "ENTER YOUR NAME",
   "enterRoomId": "Enter Room ID (5 chars)",
   "createRoomButton": "CREATE ROOM",
@@ -67,6 +67,8 @@
   "toolbarBrushSize": "Brush Size",
   "toolbarActions": "Actions",
   "toolbarEraser": "Eraser",
+  "paintbrushthicktext": "Brush Thickness :",
+
   "toolbarDone": "Done",
   "toolbarFinished": "Finished!",
   "drawingTopic": "TOPIC: \"{prompt}\"",

@@ -199,14 +199,18 @@ export default class DrawingGameScene extends Phaser.Scene {
         this.createToolbar(main);
     }
 
+	//TOOLBAR 
     createToolbar(container) {
         const toolbar = document.createElement('div');
         toolbar.className = 'draw-toolbar';
 
-        // --- ColorPaletteGroup ---
-        const colorGroup = document.createElement('div');
-        colorGroup.className = 'tool-group';
-        colorGroup.innerHTML = `<h3>🎨</h3>`; 
+        const toolbarLeft = document.createElement('div');
+        toolbarLeft.className = 'toolbar-column';
+
+        const toolbarRight = document.createElement('div');
+        toolbarRight.className = 'toolbar-column';
+
+        // --- Color Palette (Left Column) ---
         const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#FFFFFF', '#000000'];
         const colorContainer = document.createElement('div');
         colorContainer.className = 'color-container';
@@ -218,54 +222,16 @@ export default class DrawingGameScene extends Phaser.Scene {
             colorBtn.onclick = () => {
                 this.baseColor = color;
                 this.lightness = 50;
-                const lightnessSlider = document.getElementById('lightness-slider');
-                if(lightnessSlider) lightnessSlider.value = 50;
-                this.updateCurrentColor();
+                document.getElementById('lightness-slider').value = 50;
                 toolbar.querySelector('.selected')?.classList.remove('selected');
                 colorBtn.classList.add('selected');
+                this.updateToolbarVisuals();
             };
             colorContainer.appendChild(colorBtn);
         });
-        colorGroup.appendChild(colorContainer);
-        toolbar.appendChild(colorGroup); 
+        toolbarLeft.appendChild(colorContainer);
 
-        // --- LightnessGroup ---
-        const lightnessGroup = document.createElement('div');
-        lightnessGroup.className = 'tool-group';
-        lightnessGroup.innerHTML = `<h3>☀️</h3>`; 
-        const lightnessSlider = document.createElement('input');
-        lightnessSlider.type = 'range';
-        lightnessSlider.id = 'lightness-slider';
-        lightnessSlider.min = '0';
-        lightnessSlider.max = '100';
-        lightnessSlider.value = this.lightness;
-        lightnessSlider.oninput = (e) => {
-            this.lightness = e.target.value;
-            this.updateCurrentColor();
-        };
-        lightnessGroup.appendChild(lightnessSlider);
-        toolbar.appendChild(lightnessGroup); // 
-
-        // --- BrushSizeGroup ---
-        const brushGroup = document.createElement('div');
-        brushGroup.className = 'tool-group';
-        brushGroup.innerHTML = `<h3>🖌️</h3>`; 
-        const brushSizeSlider = document.createElement('input');
-        brushSizeSlider.type = 'range';
-        brushSizeSlider.min = '2';
-        brushSizeSlider.max = '30';
-        brushSizeSlider.value = this.currentBrushSize;
-        brushSizeSlider.oninput = (e) => {
-            this.currentBrushSize = e.target.value;
-        };
-        brushGroup.appendChild(brushSizeSlider);
-        toolbar.appendChild(brushGroup); 
-
-        // --- actions group ---
-        const actionsGroup = document.createElement('div');
-        actionsGroup.className = 'tool-group';
-        actionsGroup.innerHTML = `<h3> </h3>`;
-        
+        // --- Eraser Button (Left Column) ---
         const eraserBtn = document.createElement('button');
         eraserBtn.className = 'eraser-btn';
         eraserBtn.innerText = this.languageManager.get('toolbarEraser');
@@ -274,22 +240,92 @@ export default class DrawingGameScene extends Phaser.Scene {
             toolbar.querySelector('.selected')?.classList.remove('selected');
             eraserBtn.classList.add('selected');
         };
-        actionsGroup.appendChild(eraserBtn);
-        
-        const doneBtn = document.createElement('button');
-		doneBtn.className = 'done-btn';
-		doneBtn.innerText = this.languageManager.get('toolbarDone');
-		doneBtn.onclick = () => {
-		    this.myCanvas.classList.add('finished-canvas');
-		    doneBtn.disabled = true;
-		    doneBtn.innerText = this.languageManager.get('toolbarFinished');
-		    this.socket.emit('playerFinishedDrawing');
-		};
-		actionsGroup.appendChild(doneBtn);
-        toolbar.appendChild(actionsGroup);
+        toolbarLeft.appendChild(eraserBtn);
 
+        // --- Sliders (Right Column) ---
+        const slidersContainer = document.createElement('div');
+        slidersContainer.className = 'sliders-container';
+
+        // Lightness Slider Group
+        const lightnessGroup = document.createElement('div');
+        lightnessGroup.className = 'slider-group';
+        const lightnessSlider = document.createElement('input');
+        lightnessSlider.type = 'range';
+        lightnessSlider.id = 'lightness-slider';
+        lightnessSlider.min = '0';
+        lightnessSlider.max = '100';
+        lightnessSlider.value = this.lightness;
+        lightnessSlider.oninput = (e) => {
+            this.lightness = e.target.value;
+            this.updateToolbarVisuals();
+        };
+        lightnessGroup.appendChild(lightnessSlider);
+        slidersContainer.appendChild(lightnessGroup);
+
+        // thickness label
+        const thicknessLabel = document.createElement('p');
+        thicknessLabel.className = 'slider-label';
+        thicknessLabel.id = 'paintbrushthicktext';
+        thicknessLabel.innerText = this.languageManager.get('paintbrushthicktext', { defaultValue: 'Thickness' });
+        slidersContainer.appendChild(thicknessLabel);
+
+        //brush size slider group
+        const brushGroup = document.createElement('div');
+        brushGroup.className = 'slider-group brush-slider-group'; 
+        const brushPreviewDot = document.createElement('div');
+        brushPreviewDot.className = 'brush-preview-dot';
+        const brushSizeSlider = document.createElement('input');
+        brushSizeSlider.type = 'range';
+        brushSizeSlider.min = '2';
+        brushSizeSlider.max = '30';
+        brushSizeSlider.value = this.currentBrushSize;
+        brushSizeSlider.oninput = (e) => {
+            this.currentBrushSize = e.target.value;
+            this.updateToolbarVisuals();
+        };
+        brushGroup.appendChild(brushSizeSlider);
+        brushGroup.appendChild(brushPreviewDot);
+        slidersContainer.appendChild(brushGroup);
+        
+        toolbarRight.appendChild(slidersContainer);
+
+        // --- DONE Button (Right Column) ---
+        const doneBtn = document.createElement('button');
+        doneBtn.className = 'done-btn';
+        doneBtn.innerText = this.languageManager.get('toolbarDone');
+        doneBtn.onclick = () => {
+            this.myCanvas.classList.add('finished-canvas');
+            doneBtn.disabled = true;
+            doneBtn.innerText = this.languageManager.get('toolbarFinished', { defaultValue: 'Finished' });
+            this.socket.emit('playerFinishedDrawing');
+        };
+        toolbarRight.appendChild(doneBtn);
+
+        toolbar.appendChild(toolbarLeft);
+        toolbar.appendChild(toolbarRight);
+        
         container.appendChild(toolbar);
-        this.updateCurrentColor();
+        this.updateToolbarVisuals();
+    }
+    //TOOLBAR HELPER
+    updateToolbarVisuals() {
+        const [h, s] = this.hexToHsl(this.baseColor);
+        this.currentColor = this.hslToHex(h, s, this.lightness);
+
+        const lightnessSlider = document.getElementById('lightness-slider');
+        if (lightnessSlider) {
+            const darkVersion = this.hslToHex(h, s, 10);
+            const lightVersion = this.hslToHex(h, s, 90);
+            lightnessSlider.style.background = `linear-gradient(to right, ${darkVersion}, ${this.baseColor}, ${lightVersion})`;
+            
+            lightnessSlider.style.setProperty('--thumb-color', this.currentColor);
+        }
+        const brushPreviewDot = document.querySelector('.brush-preview-dot');
+        if (brushPreviewDot) {
+            brushPreviewDot.style.width = `${this.currentBrushSize}px`;
+            brushPreviewDot.style.height = `${this.currentBrushSize}px`;
+            brushPreviewDot.style.backgroundColor = this.currentColor;
+        }
     }
 
     updatePromptText() {

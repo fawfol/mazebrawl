@@ -230,7 +230,7 @@ export default class LobbyScene extends Phaser.Scene {
 		myIndex: this.players.findIndex(p => p.id === this.socket.id),
 		socket: this.socket,
 		leaderId: this.leaderId,
-        language: this.languageManager.currentLang // ADDED: Pass language
+        language: this.languageManager.currentLang 
 	  });
 	});
 
