@@ -15,7 +15,7 @@ body {
     Arial, sans-serif;
   background-color: #111111;
   color: #ffffff;
-  overflow: hidden; /*prvent scrolling on the body */
+  overflow: hidden; /* Prevent scrolling on the body */
 }
 
 /* =========================================
@@ -27,23 +27,27 @@ body {
   width: 100%;
   max-width: 1000px;
 }
+
 .header-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
 }
+
 .header-label {
   font-size: 0.9rem;
   color: #ccc;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+
 .header-value {
   font-size: 1.5rem;
   font-weight: bold;
   color: #fff;
 }
+
 .race-track {
   display: flex;
   align-items: center;
@@ -113,7 +117,7 @@ body {
   border: 2px solid #ccc;
   background-color: #333;
   color: #fff;
-  margin-bottom: 7vh; /*increased to bring it up */
+  margin-bottom: 7vh; /* Increased to bring it up */
 }
 
 .input-error {
@@ -322,7 +326,7 @@ input[type='text']:focus {
   }
   
   .typing-game-container {
-    gap: 15px; 
+    gap: 15px; /* Reduce gap on small screens */
     padding-top: 2rem;
   }
 
@@ -346,14 +350,14 @@ input[type='text']:focus {
 /* ---main Scene Container --- */
 .draw-container {
   display: flex;
-  flex-direction: column; /*  */
+  flex-direction: column; /* Stack elements vertically */
   height: 100vh;
   padding: 10px;
   box-sizing: border-box;
 }
 
 .draw-header {
-  flex-shrink: 0; 
+  flex-shrink: 0; /* Prevent header from shrinking */
   text-align: center;
   padding-bottom: 10px;
 }
@@ -429,11 +433,11 @@ input[type='text']:focus {
   position: relative;
   width: 80px;
   height: 80px;
-  margin: 10px auto; 
+  margin: 10px auto; /* Center it in the header */
 }
 
 .draw-timer-svg {
-  transform: rotate(-90deg
+  transform: rotate(-90deg); /* Start the circle at the 12 o'clock position */
   width: 100%;
   height: 100%;
 }
@@ -444,7 +448,7 @@ input[type='text']:focus {
 }
 
 .timer-track {
-  stroke: #555; 
+  stroke: #555; /* The background track of the circle */
 }
 
 .timer-progress {
@@ -658,49 +662,5 @@ input[type='range']::-moz-range-thumb {
   .results-buttons {
     flex-direction: column; 
     align-items: stretch;
-  }
-}
-
-/* =========================================
-   NEW: Mobile Drawing Game UI Adjustments
-   ========================================= */
-@media (max-width: 600px) {
-  .draw-timer-wrapper {
-    width: 60px;
-    height: 60px;
-  }
-  .timer-number {
-    font-size: 1.5rem;
-  }
-  .timer-circle {
-    stroke-width: 6;
-  }
-  .draw-toolbar {
-    gap: 8px 15px; 
-  }
-
-  /*target the first tool group (colors) */
-  .draw-toolbar .tool-group:first-child {
-    flex-basis: 100%; 
-    order: 1; 
-    justify-content: center;
-  }
-  .draw-toolbar .tool-group:first-child h3 {
-    display: none;
-  }
-  .color-container {
-    max-width: none; 
-    flex-wrap: nowrap; 
-    overflow-x: auto; 
-    padding-bottom: 5px;
-  }
-  .draw-toolbar .tool-group:nth-child(2),
-  .draw-toolbar .tool-group:nth-child(3) {
-    order: 2; 
-  }
-  .draw-toolbar .tool-group:last-child {
-    flex-basis: 100%;
-    order: 3; 
-    justify-content: center;
   }
 }
