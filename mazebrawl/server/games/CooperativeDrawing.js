@@ -1,8 +1,7 @@
 // mazebrawl/server/games/CooperativeDrawing.js
 
 const { createCanvas, loadImage } = require('canvas');
-
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const DrawingAnalyzer = require('./DrawingAnalyzer');
 
 // --- Word Lists For Topic Generation ---
 const wordLists = {
@@ -390,11 +389,11 @@ class CooperativeDrawing {
     this.lang = lang;
     this.onGameEnd = onGameEnd;
     this.difficulty = difficulty;
-
+	this.analyzer = new DrawingAnalyzer();
     this.playerCanvases = {};
     this.gameTimer = null;
     this.prompt = '';
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
     //this.startGame();
   }
 
@@ -489,68 +488,20 @@ class CooperativeDrawing {
   }
 
   //keyword-Based Scoring (No AI)
-  async getAIScore(base64Image, prompt) {
-        console.log("Evaluating drawing with Google Gemini API for prompt:", prompt);
-        
-        try {
-            // 1. Get the Gemini Pro Vision model
-            const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-
-            // 2. Prepare the image data for the API
-            const pureBase64 = base64Image.split(',')[1];
-            const imagePart = {
-                inlineData: {
-                    data: pureBase64,
-                    mimeType: "image/png"
-                },
-            };
-
-            // 3. Create a specific prompt for the AI to get a simple description
-            const aiSystemPrompt = `Analyze this image, which is a drawing from a game. The original prompt was "${prompt}". Describe what you see in a single, simple sentence.`;
-
-            // 4. Call the API
-            const result = await model.generateContent([aiSystemPrompt, imagePart]);
-            const response = result.response;
-            const aiGeneratedText = response.text().toLowerCase();
-
-            console.log(`Gemini AI says: "${aiGeneratedText}"`);
-
-            // 5. Use the SAME scoring logic as before to check for keywords
-            const promptWords = prompt.toLowerCase().replace(/^(a|an)\s/, '').split(' ');
-            let matchCount = 0;
-            let matchedWords = new Set();
-
-            for (const word of promptWords) {
-                // Check for the word, and also its plural form (e.g., "cat" in "cats")
-                if (aiGeneratedText.includes(word) && !matchedWords.has(word)) {
-                    matchCount++;
-                    matchedWords.add(word);
-                }
-            }
-
-            const score = Math.round((matchCount / promptWords.length) * 100);
-
-            // 6. Create fun feedback
-            let feedback = `The AI saw: "${aiGeneratedText}". Not bad!`;
-            if (score > 80) {
-                feedback = `Amazing! The AI perfectly recognized your drawing as: "${aiGeneratedText}"`;
-            } else if (score > 50) {
-                feedback = `Great job! The AI got the main idea, describing it as: "${aiGeneratedText}"`;
-            }
-
-            return {
-                score: Math.min(100, Math.max(10, score)),
-                feedback: feedback
-            };
-
-        } catch (error) {
-            console.error("Error calling Google Gemini API:", error);
-            return {
-                score: 50,
-                feedback: "The AI judge seems to be on a coffee break! Great job on the drawing, though!"
-            };
-        }
+  async getDrawingScore(base64Image, prompt) {
+    console.log("Delegating analysis to DrawingAnalyzer for:", prompt);
+    try {
+        const result = await this.analyzer.analyzeDrawing(base64Image, prompt);
+        return result;
+    } catch (err) {
+        console.error("Drawing analysis failed:", err);
+        return {
+            score: 30, // Default score on error
+            feedback: "There was an error analyzing the drawing.",
+            breakdown: {}
+        };
     }
+  }
 
   async initialize() {
     this.prompt = await this.generateTopic(); // using await here
@@ -642,18 +593,19 @@ class CooperativeDrawing {
     this.handleSubmit(finalCanvas.toDataURL());
   }
 
-  async handleSubmit(finalImage) {
-    const result = await this.getAIScore(finalImage, this.prompt);
-    this.io.to(this.roomId).emit('gameEnded', {
-        prompt: this.prompt,
-        finalImage: finalImage,
-        score: result.score,
-        feedback: result.feedback,
-        difficulty: this.difficulty
-    });
-    setTimeout(() => {
+	
+ async handleSubmit(finalImage) {
+    const result = await this.getDrawingScore(finalImage, this.prompt);
+      this.io.to(this.roomId).emit('gameEnded', {
+          prompt: this.prompt,
+          finalImage: finalImage,
+          score: result.score,
+          feedback: result.feedback,
+          difficulty: this.difficulty
+      });
+      setTimeout(() => {
         if (this.onGameEnd) { this.onGameEnd(); }
-    }, 8000);
+      }, 8000); 
   }
 }
 
