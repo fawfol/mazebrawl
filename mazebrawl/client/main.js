@@ -6,6 +6,8 @@ import TypingGame from './scenes/TypingGame.js';
 import DrawingGameScene from './scenes/DrawingGameScene.js';
 import LanguageManager from './LanguageManager.js';
 
+import AudioManager from './AudioManager.js'; 
+
 //determine server URL dynamically
 const SERVER_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
@@ -33,6 +35,7 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+AudioManager.init(game);
 //make SERVER_URL globally available in scenes
 game.SERVER_URL = SERVER_URL;
 

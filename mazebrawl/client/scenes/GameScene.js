@@ -1,5 +1,6 @@
 // mazebrawl/client/scenes/GameScene.js
 import LanguageManager from '../LanguageManager.js';
+import AudioManager from '../AudioManager.js'; 
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -12,7 +13,7 @@ export default class GameScene extends Phaser.Scene {
         this.socket = data.socket;
         this.leaderId = data.leaderId;
         this.isLeader = this.players[this.myIndex]?.id === data.leaderId;
-        this.maxPlayers = 7;
+        this.maxPlayers = 4;
         this.language = data.language || 'en'; //receive language from Lobby
     }
 
@@ -40,27 +41,38 @@ export default class GameScene extends Phaser.Scene {
         this.domContainer = document.createElement('div');
         this.domContainer.className = 'gamescene-container';
 
-        // --- MODIFIED FOR MOBILE LAYOUT ---
-        //flexbox to control the main layout and ensure it fits the screen height
         Object.assign(this.domContainer.style, {
             display: 'flex',
             flexDirection: 'column',
-            height: '100dvh', //dynamic viewport height for mobile
+            height: '100dvh',
             padding: '20px',
             boxSizing: 'border-box'
         });
         document.body.appendChild(this.domContainer);
         
-        // --- language selector is now part of mainContent so it flows with the layout ---
+        // This is the correct UI for the top right corner.
+        const topRightUI = document.createElement('div');
+        Object.assign(topRightUI.style, {
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px'
+        });
+        this.domContainer.appendChild(topRightUI);
+        
+        const muteButton = AudioManager.createMuteButton();
+        topRightUI.appendChild(muteButton);
+         if (this.isLeader) {
+            this.renderLanguageSelector(topRightUI);
+        }
+
+        
         const mainContent = document.createElement('div');
         mainContent.className = 'gamescene-main';
         this.domContainer.appendChild(mainContent);
-
-        // ---only create language selector if leader, but don't position absolutely ---
-        if (this.isLeader) {
-            this.renderLanguageSelector(mainContent);
-        }
-
+        
         this.statusText = document.createElement('h1');
         this.statusText.className = 'gamescene-status';
         mainContent.appendChild(this.statusText);
@@ -72,7 +84,7 @@ export default class GameScene extends Phaser.Scene {
         this.updatePlayerCount();
 
         this.renderGameSelectionUI(mainContent);
-        this.renderChatBox(this.domContainer); // append chat to main container
+        this.renderChatBox(this.domContainer);
         this.renderBackButton();
 
         //ocket listeners
@@ -84,7 +96,7 @@ export default class GameScene extends Phaser.Scene {
         this.socket.off('roomUpdate');
         this.socket.on('roomUpdate', async (data) => {
             if (data.language && data.language !== this.languageManager.currentLang) {
-                // BUG FIX: Update the scene's own language variable
+                //update the scene's own language variable
                 this.language = data.language; 
                 await this.languageManager.loadLanguage(data.language);
                 if(this.languageSelector) this.languageSelector.value = data.language;
@@ -114,47 +126,38 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // --- method to keep language selector logic clean ---
-    renderLanguageSelector(container) {
-        const langContainer = document.createElement('div');
-        Object.assign(langContainer.style, {
-            marginBottom: '15px',
-            textAlign: 'center'
-        });
-
+    renderLanguageSelector(container) { // The container is passed in
         const langLabel = document.createElement('span');
         langLabel.innerText = 'LANG/言語: ';
         langLabel.style.color = 'white';
 
         this.languageSelector = document.createElement('select');
         const languages = [
-            { code: 'en', name: 'English' },
-            { code: 'ja', name: '日本語' }
+             { code: 'en', name: 'English' },
+             { code: 'ja', name: '日本語' }
         ];
-
         languages.forEach(lang => {
-            const option = document.createElement('option');
-            option.value = lang.code;
-            option.innerText = lang.name;
-            this.languageSelector.appendChild(option);
+             const option = document.createElement('option');
+             option.value = lang.code;
+             option.innerText = lang.name;
+             this.languageSelector.appendChild(option);
         });
         this.languageSelector.value = this.languageManager.currentLang;
         this.languageSelector.onchange = async () => {
-            const newLang = this.languageSelector.value;
-            // BUG FIX: Update the scene's own language variable
-            this.language = newLang; 
-            await this.languageManager.loadLanguage(newLang);
-            this.updateUIText();
-            this.socket.emit('changeLanguage', newLang);
+             const newLang = this.languageSelector.value;
+             this.language = newLang; 
+             await this.languageManager.loadLanguage(newLang);
+             this.updateUIText();
+             this.socket.emit('changeLanguage', newLang);
             
-            const selectedOption = this.languageSelector.options[this.languageSelector.selectedIndex];
-            const langName = selectedOption.text;
-            const chatMessage = this.languageManager.get('logLanguageChanged', { lang: langName });
-            this.addChatMessage(chatMessage, '#0030FF');
+             const selectedOption = this.languageSelector.options[this.languageSelector.selectedIndex];
+             const langName = selectedOption.text;
+             const chatMessage = this.languageManager.get('logLanguageChanged', { lang: langName });
+             this.addChatMessage(chatMessage, '#0030FF');
         };
-
-        langContainer.appendChild(langLabel);
-        langContainer.appendChild(this.languageSelector);
-        container.appendChild(langContainer);
+        
+        container.appendChild(langLabel);
+        container.appendChild(this.languageSelector);
     }
 
     // --- creates the difficulty selection modal ---

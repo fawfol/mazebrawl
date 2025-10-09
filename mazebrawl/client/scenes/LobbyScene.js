@@ -1,22 +1,28 @@
 // mazebrawl/client/scenes/LobbyScene.js
 import LanguageManager from '../LanguageManager.js';
+import AudioManager from '../AudioManager.js';
 
 export default class LobbyScene extends Phaser.Scene {
   constructor() {
     super({ key: 'LobbyScene' });
   }
-
+	
+	preload() {
+    AudioManager.loadMusic(this);
+  }
+  
    async create() {
-	document.body.innerHTML = '';
+    document.body.innerHTML = '';
 
+    AudioManager.playMusic();
 
     this.socket = io(this.game.SERVER_URL);
     this.languageManager = new LanguageManager(this);
-    
+   
     const isMobile = this.scale.width < 768;
 
-   	this.container = document.createElement('div');
-	this.container.style.position = 'absolute';
+    this.container = document.createElement('div');
+    this.container.style.position = 'absolute';
     this.container.style.top = '0';
     this.container.style.left = '0';
     this.container.style.width = '100%';
@@ -32,11 +38,30 @@ export default class LobbyScene extends Phaser.Scene {
     this.container.style.gap = '15px';
     document.body.appendChild(this.container);
     
-    // ADDED: Language Selector
+    const muteContainer = document.createElement('div');
+    Object.assign(muteContainer.style, {
+        position: 'absolute',
+        top: '10px',
+        left: '10px' // Position on the left
+    });
+    const muteButton = AudioManager.createMuteButton();
+    muteContainer.appendChild(muteButton);
+    this.container.appendChild(muteContainer);
+    
     this.langContainer = document.createElement('div');
     Object.assign(this.langContainer.style, {
-        position: 'absolute', top: '10px', right: '10px'
+        position: 'absolute',
+        top: '10px',
+        right: '10px', // Position on the right
+        display: 'flex',
+        alignItems: 'center',
+        gap: '5px'
     });
+    
+    this.languageControls = document.createElement('div');
+    this.languageControls.style.display = 'contents';
+    this.langContainer.appendChild(this.languageControls);
+
     const langLabel = document.createElement('span');
     langLabel.innerText = 'LANG/言語: ';
     this.languageSelector = document.createElement('select');
@@ -62,10 +87,9 @@ export default class LobbyScene extends Phaser.Scene {
             this.socket.emit('changeLanguage', newLang);
         }
     };
-    this.langContainer.appendChild(langLabel);
-    this.langContainer.appendChild(this.languageSelector);
+    this.languageControls.appendChild(langLabel);
+    this.languageControls.appendChild(this.languageSelector);
     this.container.appendChild(this.langContainer);
-    
     //title
 	this.title = document.createElement('h1');
     Object.assign(this.title.style, {
@@ -237,11 +261,10 @@ export default class LobbyScene extends Phaser.Scene {
     await this.languageManager.loadLanguage(this.languageManager.currentLang);
     this.updateUIText();
 
-    // ADDED: Read Room ID from URL on load
     this.checkUrlForRoomId();
   }
   
-  // ADDED: New method to check URL hash for a Room ID
+  //new method to check URL hash for a Room ID
   checkUrlForRoomId() {
     const roomIdFromUrl = window.location.hash.substring(1).toUpperCase();
     if (roomIdFromUrl && roomIdFromUrl.length === 5) {
@@ -299,7 +322,8 @@ export default class LobbyScene extends Phaser.Scene {
     });
   }
 
-	leaveRoom() {
+	
+    leaveRoom() {
       this.socket.emit('leaveRoom', (response) => {
         if (response.success) {
           this.formContainer.style.display = 'flex';
@@ -308,22 +332,22 @@ export default class LobbyScene extends Phaser.Scene {
           this.leaveBtn.style.display = 'none';
           this.playerListDiv.innerHTML = '';
           this.capacityText.innerText = '';
-		  const msg = this.languageManager.get('logYouLeft');
-          	this.langContainer.style.display = 'block'; //show language selector again
-          	this.shareBtn.style.display = 'none'; //hide share button
-          window.location.hash = ''; //clear hash from URL
+          const msg = this.languageManager.get('logYouLeft');
+              this.languageControls.style.display = 'contents';
+                  this.shareBtn.style.display = 'none';
+                  window.location.hash = '';
         } else {
           alert(response.message || 'Error leaving room.');
         }
       });
     }
 
-	showLobbyUI(data) {
-	  this.formContainer.style.display = 'none';
-      this.langContainer.style.display = 'none'; // Hide main language selector
-	  this.leaveBtn.style.display = 'inline-block';
 
-      // ADDED: Configure and show the share button
+	showLobbyUI(data) {
+      this.formContainer.style.display = 'none';
+      this.languageControls.style.display = 'none'; 
+      this.leaveBtn.style.display = 'inline-block';
+
       this.statusText.innerText = this.languageManager.get('roomIdDisplay', { id: data.roomId });
       Object.assign(this.statusText.style, {
         fontSize: '17px',
@@ -385,7 +409,7 @@ export default class LobbyScene extends Phaser.Scene {
 
     this.playerListDiv.innerHTML = '';
 
-    const maxPlayers = data.maxPlayers || 7;
+    const maxPlayers = data.maxPlayers || 4;
     this.capacityText.innerText = this.languageManager.get('playersCountLobby', {
 		count: data.players.length,
 		max: maxPlayers
