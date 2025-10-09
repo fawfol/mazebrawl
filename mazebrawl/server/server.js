@@ -39,7 +39,7 @@ function broadcastRoomUpdate(roomId) {
   io.to(roomId).emit('roomUpdate', {
     leaderId: room.leaderId,
     players: room.players,
-    maxPlayers: 7,
+    maxPlayers: 4,
     language: room.language
   });
 }
@@ -70,7 +70,7 @@ io.on('connection', (socket) => {
     if (typeof callback !== 'function') return;
     const room = rooms.get(roomId);
     if (!room) return callback({ success: false, message: 'Room does not exist.' });
-    if (room.players.length >= 7) return callback({ success: false, message: 'Room is full.' });
+    if (room.players.length >= 4) return callback({ success: false, message: 'Room is full.' });
     room.players.push({ id: socket.id, name: playerName, ready: false });
     socket.join(roomId);
     io.to(roomId).emit('playerJoined', playerName);
