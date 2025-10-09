@@ -545,57 +545,67 @@ class CooperativeDrawing {
     this.playerCanvases[playerId] = canvasData;
     this.io.to(this.roomId).emit('drawingUpdate', { playerId, canvasData });
   }
-
-  async endGame() {
+  
+  
+async endGame() {
     if (this.gameTimer) {
-      clearTimeout(this.gameTimer);
-      this.gameTimer = null;
+        clearTimeout(this.gameTimer);
+        this.gameTimer = null;
     }
     console.log(`Game ended in room ${this.roomId}. Evaluating drawing...`);
 
-    // --- server assembles the final image ---
-    this.io.to(this.roomId).emit('evaluatingDrawing'); //tell clients to show "Evaluating..."
+    this.io.to(this.roomId).emit('evaluatingDrawing');
 
     const { layout, segments } = this.calculateSegments(this.players.length);
     const playerCount = this.players.length;
 
-    let cols = 1, rows = 1;
-    if (layout.gridTemplateColumns) cols = layout.gridTemplateColumns.split(' ').length;
-    if (layout.gridTemplateRows) rows = layout.gridTemplateRows.split(' ').length;
+    // --- Corrected Grid Parsing Logic ---
+    const gridRows = layout.gridTemplateAreas.match(/"(.*?)"/g).map(row => row.replace(/"/g, '').trim().split(/\s+/));
+    const rows = gridRows.length;
+    const cols = rows > 0 ? gridRows[0].length : 0;
     
-    //for irregular grids (like 3 or 5 players) parse the areas to get dimensions
-    if (playerCount === 3 || playerCount === 5 || playerCount > 6) {
-        const areas = layout.gridTemplateAreas.replace(/"/g, '').split(' ');
-        rows = areas.length;
-        cols = areas[0].length;
-    }
+    const segmentWidth = 400; // Using a slightly smaller base size for better fit
+    const segmentHeight = 400;
 
-    const segmentWidth = 500; 
-    const segmentHeight = 500; 
+    // --- Create a map of grid areas to find out which areas span multiple cells ---
+    const areaMap = {};
+    gridRows.forEach((row, r) => {
+        row.forEach((area, c) => {
+            if (!areaMap[area]) {
+                areaMap[area] = { r, c, w: 1, h: 1 };
+            } else {
+                areaMap[area].w = Math.max(areaMap[area].w, c - areaMap[area].c + 1);
+                areaMap[area].h = Math.max(areaMap[area].h, r - areaMap[area].r + 1);
+            }
+        });
+    });
+
     const finalCanvas = createCanvas(segmentWidth * cols, segmentHeight * rows);
     const finalCtx = finalCanvas.getContext('2d');
     finalCtx.fillStyle = '#FFFFFF';
     finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-    const promises = segments.map(async (seg, index) => {
+    const promises = segments.map(async (seg) => {
         const playerData = this.playerCanvases[seg.playerId];
         if (!playerData) return;
 
-        const col = index % cols;
-        const row = Math.floor(index / cols);
+        const areaInfo = areaMap[seg.area];
+        if (!areaInfo) return; // Could not find area info for this segment
 
-        //for complex layouts, more advanced mapping based on grid-area
-        const x = col * segmentWidth;
-        const y = row * segmentHeight;
+        const x = areaInfo.c * segmentWidth;
+        const y = areaInfo.r * segmentHeight;
+        const width = areaInfo.w * segmentWidth;
+        const height = areaInfo.h * segmentHeight;
 
         const image = await loadImage(playerData);
-        finalCtx.drawImage(image, x, y, segmentWidth, segmentHeight);
+        // Draw the player's image, stretching it to fill its assigned grid area
+        finalCtx.drawImage(image, x, y, width, height);
     });
 
     await Promise.all(promises);
     
     this.handleSubmit(finalCanvas.toDataURL());
-  }
+}
 
 	
  async handleSubmit(finalImage) {
