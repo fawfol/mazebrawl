@@ -18,6 +18,26 @@ body {
   overflow: hidden; /* Prevent scrolling on the body */
 }
 
+.volume-slider {
+  /* It will try to be 20% of the screen width */
+  width: 20vw;
+  
+  /* But it will not get bigger than 120px on large screens */
+  max-width: 120px;
+
+  /* And it will not get smaller than 60px on small screens */
+  min-width: 60px;
+
+  cursor: pointer;
+  margin: 0; /* Ensures proper alignment */
+}
+
+/* Style the slider when it's disabled (muted) */
+.volume-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* =========================================
    Typing Race Game Styles
    ========================================= */

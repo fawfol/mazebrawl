@@ -38,15 +38,14 @@ export default class LobbyScene extends Phaser.Scene {
     this.container.style.gap = '15px';
     document.body.appendChild(this.container);
     
-    const muteContainer = document.createElement('div');
-    Object.assign(muteContainer.style, {
+   
+    const audioControls = AudioManager.createAudioControls();
+    Object.assign(audioControls.style, {
         position: 'absolute',
         top: '10px',
-        left: '10px' // Position on the left
+        left: '10px'
     });
-    const muteButton = AudioManager.createMuteButton();
-    muteContainer.appendChild(muteButton);
-    this.container.appendChild(muteContainer);
+    this.container.appendChild(audioControls);
     
     this.langContainer = document.createElement('div');
     Object.assign(this.langContainer.style, {
